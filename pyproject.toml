@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "belinda-ai"
+version = "1.0"
+description = "Helping musicians discover the best potential partner for expansion of the audience using AI"
+authors = ["Matveeva.S.P"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "belinda"}]
+
+[tool.poetry.dependencies]
+python = "3.10.11"
+pytest = "^7.4.0"
+ruff = "^0.0.277"
+black = "^23.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
