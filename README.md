@@ -13,6 +13,17 @@
 ![Black](https://img.shields.io/badge/Black-000000?style=for-the-badge)
 </div>
 
+## Build
+___
+```bash
+docker-compose up --build belinda_app
+```
+
+## Local Start
+___
+```bash
+uvicorn belinda_app.app:app --host 0.0.0.0 --port 8000
+```
 
 ## Ruff linting
 ___

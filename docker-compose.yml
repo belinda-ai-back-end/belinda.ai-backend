@@ -1,0 +1,15 @@
+version: "3"
+services:
+  belinda_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: belinda_app
+#    env_file:
+#      - belinda_app/.env
+    networks:
+      - default
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
