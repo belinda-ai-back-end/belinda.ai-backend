@@ -3,7 +3,7 @@ import psutil as psutil
 from fastapi import Request, APIRouter
 
 from belinda_app.settings import get_settings
-from schemas.responses import HealthcheckResponse
+from belinda_app.schemas.responses import HealthcheckResponse
 
 settings = get_settings()
 
