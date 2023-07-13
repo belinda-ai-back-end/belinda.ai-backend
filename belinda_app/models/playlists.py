@@ -14,7 +14,7 @@ class Playlist(SQLModel, table=True):
     description: str | None
     external_urls_spotify: str | None
     href: str | None
-    images_url: str | None
+    # images_url: str | None  # там находится List, возможна связь к отдельной таблицы Images
     name: str | None
     # owner_id: UUID | None = Field(default_factory=uuid4, foreign_key="curator.id")
     owner_id: str | None
