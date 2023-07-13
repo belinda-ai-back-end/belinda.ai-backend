@@ -1,4 +1,5 @@
 # from typing import TYPE_CHECKING, Optional
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
 
@@ -8,7 +9,8 @@ from sqlmodel import Field, SQLModel
 
 
 class Track(SQLModel, table=True):
-    id: str = Field(default=None, primary_key=True)
+    track_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    id: str | None
     duration_ms: int | None
     name: str | None
     popularity: int | None
