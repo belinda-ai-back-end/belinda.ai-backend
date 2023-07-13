@@ -15,6 +15,11 @@ psutil = "^5.9.5"
 ruff = "^0.0.277"
 black = "^23.3.0"
 itsdangerous = "^2.1.2"
+python-dotenv = "^1.0.0"
+sqlalchemy = "1.4.35"
+sqlmodel = "0.0.6"
+asyncpg = "^0.28.0"
+python-multipart = "^0.0.6"
 
 
 [build-system]

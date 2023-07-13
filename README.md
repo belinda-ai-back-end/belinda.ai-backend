@@ -16,6 +16,9 @@
 ## Build
 ___
 ```bash
+docker-compose up --build -d postgres
+```
+```bash
 docker-compose up --build belinda_app
 ```
 
