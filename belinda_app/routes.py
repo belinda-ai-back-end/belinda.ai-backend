@@ -1,14 +1,16 @@
 # import json
-import logging
+# import logging
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter  # HTTPException, UploadFile, File
+from fastapi import Request, APIRouter, HTTPException  # UploadFile, File
 from sqlalchemy import func, select
+from starlette import status
 
 from belinda_app.settings import get_settings
 from belinda_app.schemas.responses import HealthcheckResponse
-from belinda_app.models import Playlist
+from belinda_app.models.feedback import RatingEnum
+from belinda_app.models import Playlist, User, Feedback
 from belinda_app.db.database import SessionLocal
 
 # from belinda_app.models import Curator, Playlist, User
@@ -17,7 +19,7 @@ from belinda_app.db.database import SessionLocal
 settings = get_settings()
 
 router = APIRouter()
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 @router.get("/healthcheck", response_model=HealthcheckResponse)
@@ -40,6 +42,59 @@ async def get_playlists():
         random_playlists = query.scalars().all()
 
     return random_playlists
+
+
+@router.post("/feedback")
+async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
+    async with SessionLocal() as session:
+        stmt_user = await session.execute(select(User).where(User.id == user_id))
+        user = stmt_user.scalar_one_or_none()
+
+        stmt_playlist = await session.execute(select(Playlist).where(Playlist.id == playlist_id))
+        playlist = stmt_playlist.scalar_one_or_none()
+
+        if user is not None and playlist is not None:
+            feedback_result = await session.execute(
+                select(Feedback).where(
+                    Feedback.user_id == user_id, Feedback.playlist_id == playlist_id)
+            )
+            feedback = feedback_result.scalar_one_or_none()
+
+            if feedback is not None:
+                if feedback.rating == RatingEnum.like and rating == RatingEnum.unlike:
+                    message = "Delete like"
+                elif feedback.rating == RatingEnum.dislike and rating == RatingEnum.unlike:
+                    message = "Delete dislike"
+                else:
+                    message = f"Set {rating.capitalize()}"
+                feedback.rating = rating
+            else:
+                feedback = Feedback(user_id=user_id, playlist_id=playlist_id, rating=rating)
+                message = f"Set {rating.capitalize()}"
+                session.add(feedback)
+
+            await session.commit()
+            return {"message": message}
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User or playlist not found")
+
+
+# Добавление записи о лайке в базу
+# @router.post("/like")
+# async def put_like():
+#     pass
+#
+#
+# # Добавление записи о дизлайке в базу
+# @router.post("/dislike")
+# async def put_dislike():
+#     pass
+#
+#
+# # Добавление записи о снятии лайка/дизлайка в базу
+# @router.post("/unlike")
+# async def remove_like():
+#     pass
 
 
 # Добавление кураторов в базу
