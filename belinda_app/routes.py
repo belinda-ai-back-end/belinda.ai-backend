@@ -4,10 +4,13 @@ from datetime import datetime
 
 import psutil as psutil
 from fastapi import Request, APIRouter  # HTTPException, UploadFile, File
+from sqlalchemy import func, select
 
 from belinda_app.settings import get_settings
 from belinda_app.schemas.responses import HealthcheckResponse
-# from belinda_app.db.database import SessionLocal
+from belinda_app.models import Playlist
+from belinda_app.db.database import SessionLocal
+
 # from belinda_app.models import Curator, Playlist, User
 
 
@@ -25,6 +28,18 @@ async def healthcheck(request: Request):
         ).total_seconds(),
         "status": "OK",
     }
+
+
+# Получение 100 рандомных плейлистов
+@router.get("/playlists")
+async def get_playlists():
+    async with SessionLocal() as session:
+        query = await session.execute(
+            select(Playlist).order_by(func.random()).limit(100)
+        )
+        random_playlists = query.scalars().all()
+
+    return random_playlists
 
 
 # Добавление кураторов в базу
