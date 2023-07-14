@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import TYPE_CHECKING, List
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel, Relationship
 
@@ -11,15 +12,13 @@ if TYPE_CHECKING:
 class RatingEnum(str, Enum):
     like = 'Like'
     dislike = 'Dislike'
-    unlike = None
+    unlike = "No like/dislike"
 
 
 class Feedback(SQLModel, table=True):
-    id: str = Field(default=None, primary_key=True)
+    feedback_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     playlist_id: str | None = Field(default=None, foreign_key="playlist.id")
     user_id: str | None = Field(default=None, foreign_key="user.id")
     rating: RatingEnum | None = Field(default=RatingEnum.unlike)
-    # like: bool | None = Field(default=None)
-    # dislike: bool | None = Field(default=None)
     playlist: List["Playlist"] = Relationship(back_populates="feedback")
     user: "User" = Relationship(back_populates="feedback")
