@@ -4,7 +4,7 @@ from sqlmodel import Field, SQLModel
 
 
 class Curator(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    curator_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     name: str | None
     desc: str | None
     facebook_link: str | None

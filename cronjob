@@ -1,0 +1,2 @@
+# Run the functions on the 1st day of every month
+0 0 1 * * root /app/run_parse.sh

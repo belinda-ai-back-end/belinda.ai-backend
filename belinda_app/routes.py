@@ -1,34 +1,34 @@
-# import json
-# import logging
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException  # UploadFile, File
+from fastapi import Request, APIRouter, HTTPException
 from sqlalchemy import func, select
 from starlette import status
 
 from belinda_app.settings import get_settings
-from belinda_app.schemas.responses import HealthcheckResponse
 from belinda_app.models.feedback import RatingEnum
 from belinda_app.models import Playlist, User, Feedback
-from belinda_app.db.database import SessionLocal
-
-# from belinda_app.models import Curator, Playlist, User
+from belinda_app.schemas.responses import HealthcheckResponse
+from belinda_app.db.database import SessionLocal, check_database_health
+# from belinda_app.services import parse_spotify_playlists, parse_spotify_tracks, update_curator_data_in_db
 
 
 settings = get_settings()
 
 router = APIRouter()
-# logging.basicConfig(level=logging.INFO)
 
 
+# Проверка статуса базы
 @router.get("/healthcheck", response_model=HealthcheckResponse)
 async def healthcheck(request: Request):
+    database_status = await check_database_health()
+    uptime = (
+            datetime.now() - datetime.fromtimestamp(psutil.boot_time())).total_seconds()
+    response_status = "OK" if database_status else "Failed"
+
     return {
-        "uptime": (
-            datetime.now() - datetime.fromtimestamp(psutil.boot_time())
-        ).total_seconds(),
-        "status": "OK",
+        "uptime": uptime,
+        "status": response_status,
     }
 
 
@@ -47,10 +47,11 @@ async def get_playlists():
 @router.post("/feedback")
 async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
     async with SessionLocal() as session:
-        stmt_user = await session.execute(select(User).where(User.id == user_id))
+        stmt_user = await session.execute(select(User).where(User.user_id == user_id))
         user = stmt_user.scalar_one_or_none()
 
-        stmt_playlist = await session.execute(select(Playlist).where(Playlist.id == playlist_id))
+        stmt_playlist = await session.execute(
+            select(Playlist).where(Playlist.id == playlist_id))
         playlist = stmt_playlist.scalar_one_or_none()
 
         if user is not None and playlist is not None:
@@ -79,99 +80,25 @@ async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User or playlist not found")
 
 
-# Добавление записи о лайке в базу
-# @router.post("/like")
-# async def put_like():
-#     pass
-#
-#
-# # Добавление записи о дизлайке в базу
-# @router.post("/dislike")
-# async def put_dislike():
-#     pass
-#
-#
-# # Добавление записи о снятии лайка/дизлайка в базу
-# @router.post("/unlike")
-# async def remove_like():
-#     pass
+# Обновление данных таблицы "Curators"
+# @router.get("/update_curators")
+# async def update_curator_data():
+#     await update_curator_data_in_db()
+#     return {"message": "Data parse an update database table info"}
 
 
-# Добавление кураторов в базу
-# @router.post("/add_curators/")
-# async def create_curators(file: UploadFile = File(...)):
-#     try:
-#         contents = await file.read()
-#         curator_data = json.loads(contents)
-#
-#         session = SessionLocal()
-#         try:
-#             for curator_name, curator_details in curator_data.items():
-#                 curator = Curator(
-#                     name=curator_details["name"],
-#                     desc=curator_details["desc"],
-#                     facebook_link=curator_details["facebook_link"],
-#                     spotify_link=curator_details["spotify_link"],
-#                     instagram_link=curator_details["instagram_link"],
-#                     tiktok_link=curator_details["tiktok_link"],
-#                     twitter_link=curator_details["twitter_link"],
-#                     youtube_link=curator_details["youtube_link"],
-#                     apple_music_link=curator_details["apple_music_link"],
-#                     mixcloud_link=curator_details["mixcloud_link"],
-#                     twitch_link=curator_details["twitch_link"],
-#                 )
-#                 session.add(curator)
-#
-#             await session.commit()
-#
-#             return {"message": "Data uploaded successfully"}
-#         except Exception as e:
-#             await session.rollback()
-#             raise HTTPException(status_code=500, detail=str(e))
-#         finally:
-#             await session.close()
-#
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail="Failed to read JSON file")
+# Обновление данных таблицы "Playlists"
+# @router.get("/parse_playlists")
+# async def update_playlist_data():
+#     await parse_spotify_playlists()
+#     return {"message": "Data parse an update database table info"}
 
 
-# Добавление плейлистов в базу
-# @router.post("/add_playlists/")
-# async def create_playlists(file: UploadFile = File(...)):
-#     contents = await file.read()
-#     playlist_data = json.loads(contents)
-#
-#     session = SessionLocal()
-#     try:
-#         for playlist_name, playlist_details in playlist_data.items():
-#             playlist = Playlist(
-#                 id=playlist_name,
-#                 collaborative=playlist_details["collaborative"],
-#                 description=playlist_details["description"],
-#                 external_urls_spotify=playlist_details["external_urls"]["spotify"],
-#                 href=playlist_details["href"],
-#                 name=playlist_details["name"],
-#                 owner_id=playlist_details["owner"]["id"],
-#                 owner_display_name=playlist_details["owner"]["display_name"],
-#                 owner_href=playlist_details["owner"]["href"],
-#                 owner_short=playlist_details["owner_short"],
-#                 primary_color=playlist_details["primary_color"],
-#                 public=playlist_details["public"],
-#                 snapshot_id=playlist_details["snapshot_id"],
-#                 tracks_total=playlist_details["tracks"]["total"],
-#                 type=playlist_details["type"],
-#                 uri=playlist_details["uri"],
-#             )
-#             session.add(playlist)
-#
-#         await session.commit()
-#
-#         return {"message": "Data uploaded successfully"}
-#     except Exception as e:
-#         await session.rollback()
-#         raise HTTPException(status_code=500, detail=str(e))
-#     finally:
-#         await session.close()
+# Обновление данных таблицы "Tracks"
+# @router.get("/parse_tracks")
+# async def update_track_data():
+#     await parse_spotify_tracks()
+#     return {"message": "Data parse an update database table info"}
 
 
 # Добавление пользователей в базу

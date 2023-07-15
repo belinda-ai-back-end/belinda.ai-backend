@@ -20,6 +20,10 @@ sqlalchemy = "1.4.35"
 sqlmodel = "0.0.6"
 asyncpg = "^0.28.0"
 python-multipart = "^0.0.6"
+spotipy = "^2.23.0"
+tqdm = "^4.65.0"
+bs4 = "^0.0.1"
+selenium = "^4.10.0"
 
 
 [build-system]

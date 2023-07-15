@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class User(SQLModel, table=True):
-    id: str = Field(default=None, primary_key=True)
+    user_id: str = Field(default=None, primary_key=True)
     name: str | None
     email: str | None
     phone: str | None
