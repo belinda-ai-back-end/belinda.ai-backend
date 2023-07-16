@@ -1,13 +1,15 @@
-import json
 import logging
 import os
-import time
-
 import spotipy
-import asyncio
-
-from tqdm import tqdm
 from spotipy.oauth2 import SpotifyClientCredentials
+import json
+from tqdm import tqdm
+from time import sleep
+
+from urllib3.exceptions import ReadTimeoutError
+from requests.exceptions import ReadTimeout
+
+from spotipy.exceptions import SpotifyException
 
 from belinda_app.services.update_data_in_db_service import update_track_data_in_db
 
@@ -24,8 +26,23 @@ if not os.path.exists(playlists_file_path):
 if not os.path.exists(processed_file_path):
     logger.error(f"Processed file '{processed_file_path}' not found")
 
-if not os.path.exists(playlists_file_path):
+if not os.path.exists(tracks_file_path):
     logger.error(f"Tracks file '{tracks_file_path}' not found")
+
+
+def form_nice_info(track):
+    res = {}
+    try:
+        res["id"] = track["track"]["id"]
+        res["duration_ms"] = track["track"]["duration_ms"]
+        res["name"] = track["track"]["name"]
+        res["popularity"] = track["track"]["popularity"]
+        res["preview_url"] = track["track"]["preview_url"]
+        res["album"] = track["track"]["album"]
+        del res["album"]["available_markets"]
+    except (KeyError, TypeError):
+        return None
+    return res
 
 
 async def parse_spotify_tracks():
@@ -38,12 +55,8 @@ async def parse_spotify_tracks():
     with open(playlists_file_path, "r") as f:
         playlists = json.load(f)
 
-    processed_set = set()
     with open(processed_file_path, "r") as f:
-        for line in f:
-            processed_set.add(line.strip())
-
-    timeout_duration = 100
+        processed_set = {line[:-1] for line in f.readlines()}
 
     for playlist_id, _ in tqdm(playlists.items(), total=len(playlists)):
 
@@ -51,15 +64,9 @@ async def parse_spotify_tracks():
             continue
 
         try:
-            start_time = time.time()
-            while time.time() - start_time < timeout_duration:
-                try:
-                    tracks = sp.playlist_items(playlist_id)
-                    break
-                except spotipy.exceptions.SpotifyException as e:
-                    if "Read timed out" in str(e):
-                        break
-        except Exception as e:
+            tracks = sp.playlist_items(playlist_id)
+        except SpotifyException as e:
+            print(e.msg)
             continue
 
         while tracks:
@@ -68,24 +75,18 @@ async def parse_spotify_tracks():
                 with open(tracks_file_path, "a") as f:
                     f.write(json.dumps(track) + "\n")
 
-            if tracks['next']:
+            if False:
                 try:
                     tracks = sp.next(tracks)
-                except (spotipy.exceptions.SpotifyException, spotipy.client.SpotifyException) as e:
-                    logger.error(f"Error retrieving next set of tracks: {e.msg}")
-                    break
+                except (ReadTimeoutError, ReadTimeout):
+                    print("got ReadTimeoutError or ReadTimeout", flush=True)
             else:
                 tracks = None
 
         with open(processed_file_path, "a") as f:
             f.write(playlist_id + '\n')
 
-        await asyncio.sleep(0.2)
+        sleep(0.2)
+        track_data_file = tracks_file_path
 
-    logger.info("Script execution completed.")
-    tracks_file = tracks_file_path
-
-    await update_track_data_in_db(tracks_file)
-
-# if __name__ == '__main__':
-#     asyncio.run(parse_spotify_tracks())
+        await update_track_data_in_db(track_data_file)
