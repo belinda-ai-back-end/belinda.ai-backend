@@ -28,17 +28,6 @@ docker-compose up --build -d postgres
 docker-compose up --build belinda_app
 ```
 
-## Build cron
-___
-```bash
-docker build -t cronjob -f cron.Dockerfile .
-```
-
-___
-```bash
-docker run -d cronjob 
-```
-
 ## Local Start
 ___
 ```bash

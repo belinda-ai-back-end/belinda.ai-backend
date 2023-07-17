@@ -1,2 +1,0 @@
-0 0 1 * * python /app/to/belinda_app/parsers/parse_spotify_tracks.py >> /var/log/cron.log 2>&1
-0 0 1 * * python /app/belinda_app/parsers/parse_spotify_playlist.py >> /var/log/cron.log 2>&1
