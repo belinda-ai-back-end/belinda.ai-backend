@@ -1,2 +1,2 @@
-# Run the functions on the 1st day of every month
-0 0 1 * * root /app/run_parse.sh
+0 0 1 * * python /app/to/belinda_app/parsers/parse_spotify_tracks.py >> /var/log/cron.log 2>&1
+0 0 1 * * python /app/belinda_app/parsers/parse_spotify_playlist.py >> /var/log/cron.log 2>&1

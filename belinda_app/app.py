@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -6,8 +8,6 @@ from belinda_app.routes import router
 from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
 from belinda_app.utils import setup_logger
-
-import logging
 
 
 logger = logging.getLogger(__name__)

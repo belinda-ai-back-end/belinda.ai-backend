@@ -90,3 +90,6 @@ async def parse_spotify_tracks():
         track_data_file = tracks_file_path
 
         await update_track_data_in_db(track_data_file)
+
+# if __name__ == '__main__':
+#     asyncio.run(parse_spotify_tracks())

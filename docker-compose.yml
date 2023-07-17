@@ -23,6 +23,13 @@ services:
     ports:
       - "8000:8000"
 
+#  cron:
+#    build:
+#      context: .
+#      dockerfile: cron.Dockerfile
+#    volumes:
+#      - ./parsers:/app/belinda_app/parsers
+
 volumes:
   data:
     driver: local

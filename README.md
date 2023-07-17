@@ -13,6 +13,12 @@
 ![Black](https://img.shields.io/badge/Black-000000?style=for-the-badge)
 </div>
 
+<p>
+Перед запуском следует создать файл .env и вставить креды базы данных, а также, если нужно будет запустить парсеры, следует вставить ключи от Spotify
+Парсинг треков занимает очень-очень много времени
+Следует добавить в корень проекта файлы curators.json, playlists.json, tracks.json, processed.txt
+</p>
+
 ## Build
 ___
 ```bash
@@ -20,6 +26,17 @@ docker-compose up --build -d postgres
 ```
 ```bash
 docker-compose up --build belinda_app
+```
+
+## Build cron
+___
+```bash
+docker build -t cronjob -f cron.Dockerfile .
+```
+
+___
+```bash
+docker run -d cronjob 
 ```
 
 ## Local Start
