@@ -1,7 +1,7 @@
 import uuid
 from functools import lru_cache
 
-from pydantic import BaseSettings, Field, SecretStr,  validator
+from pydantic import BaseSettings, Field, SecretStr, validator
 
 
 class Settings(BaseSettings):

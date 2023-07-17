@@ -10,8 +10,8 @@ if TYPE_CHECKING:
 
 
 class RatingEnum(str, Enum):
-    like = 'Like'
-    dislike = 'Dislike'
+    like = "Like"
+    dislike = "Dislike"
     unlike = "No like/dislike"
 
 

@@ -7,7 +7,9 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,7 @@ class TaleoJobScraper:
         self.driver.set_window_size(1500, 1000)
         self.wait = WebDriverWait(self.driver, 10)
         self.json_dict = {}
-        self.link = 'https://www.submithub.com/curators'
+        self.link = "https://www.submithub.com/curators"
 
     async def parse_one_curator(self, curator_soup):
         name = curator_soup.find("h5", class_="bold mrg-top-05").text
@@ -35,23 +37,23 @@ class TaleoJobScraper:
         hello_text = hello_text.text if hello_text else None
 
         if name not in self.json_dict:
-            self.json_dict[name] = {
-                "name": name,
-                "desc": hello_text,
-                **social_links
-            }
+            self.json_dict[name] = {"name": name, "desc": hello_text, **social_links}
 
     async def scrape(self):
         try:
             self.driver.get(self.link)
-            r = re.compile(r'\d+ - \d+ of \d+')
-            f = lambda d: re.search(r, d.find_element_by_id('blog-item').text)
+            r = re.compile(r"\d+ - \d+ of \d+")
+            f = lambda d: re.search(r, d.find_element_by_id("blog-item").text)
 
             SCROLL_PAUSE_TIME = 1
-            last_height = self.driver.execute_script("return document.body.scrollHeight")
+            last_height = self.driver.execute_script(
+                "return document.body.scrollHeight"
+            )
 
             while True:
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                self.driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);"
+                )
                 sleep(SCROLL_PAUSE_TIME)
 
                 soup = BeautifulSoup(self.driver.page_source, "html.parser")
@@ -65,7 +67,9 @@ class TaleoJobScraper:
 
                 logger.info(f"Total curators scraped: {len(self.json_dict)}")
 
-                new_height = self.driver.execute_script("return document.body.scrollHeight")
+                new_height = self.driver.execute_script(
+                    "return document.body.scrollHeight"
+                )
                 if new_height == last_height:
                     break
                 last_height = new_height
@@ -82,5 +86,5 @@ async def parse_submithub():
     await scraper.scrape()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(parse_submithub())

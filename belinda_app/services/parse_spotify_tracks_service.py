@@ -13,12 +13,14 @@ from spotipy.exceptions import SpotifyException
 
 from belinda_app.services.update_data_in_db_service import update_track_data_in_db
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
-playlists_file_path = '/app/playlists.json'
-processed_file_path = '/app/processed.txt'
-tracks_file_path = '/app/tracks.json'
+playlists_file_path = "/app/playlists.json"
+processed_file_path = "/app/processed.txt"
+tracks_file_path = "/app/tracks.json"
 
 if not os.path.exists(playlists_file_path):
     logger.error(f"Playlists file '{playlists_file_path}' not found")
@@ -59,7 +61,6 @@ async def parse_spotify_tracks():
         processed_set = {line[:-1] for line in f.readlines()}
 
     for playlist_id, _ in tqdm(playlists.items(), total=len(playlists)):
-
         if playlist_id in processed_set:
             continue
 
@@ -70,7 +71,7 @@ async def parse_spotify_tracks():
             continue
 
         while tracks:
-            for i, track in enumerate(tracks['items']):
+            for i, track in enumerate(tracks["items"]):
                 track["playlists"] = [playlist_id]
                 with open(tracks_file_path, "a") as f:
                     f.write(json.dumps(track) + "\n")
@@ -84,12 +85,13 @@ async def parse_spotify_tracks():
                 tracks = None
 
         with open(processed_file_path, "a") as f:
-            f.write(playlist_id + '\n')
+            f.write(playlist_id + "\n")
 
         sleep(0.2)
         track_data_file = tracks_file_path
 
         await update_track_data_in_db(track_data_file)
+
 
 # if __name__ == '__main__':
 #     asyncio.run(parse_spotify_tracks())

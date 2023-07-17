@@ -8,25 +8,28 @@ from belinda_app.db.database import SessionLocal
 from belinda_app.models import Playlist, Track, Curator
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 async def update_curator_data_in_db():
-    curators_file_path = '/app/curators.json'
+    curators_file_path = "/app/curators.json"
 
     if not os.path.exists(curators_file_path):
         logger.error(f"Curators file '{curators_file_path}' not found")
         return {"message": "Curators file not found"}
-    with open(curators_file_path, 'r') as file:
+    with open(curators_file_path, "r") as file:
         content = file.read()
         curator_data = json.loads(content)
         logger.info(f"Curators file: {curator_data}")
 
     async with SessionLocal() as session:
         for curator_name, curator_details in curator_data.items():
-            curator_exists = await session.execute(select(exists().where(
-                Curator.name == curator_name)))
+            curator_exists = await session.execute(
+                select(exists().where(Curator.name == curator_name))
+            )
             logger.info(f"Curator data: {curator_name, curator_details}")
             if not curator_exists.scalar():
                 curator = Curator(
@@ -50,15 +53,16 @@ async def update_curator_data_in_db():
 
 
 async def update_playlist_data_in_db(playlists_file):
-    with open(playlists_file, 'r') as file:
+    with open(playlists_file, "r") as file:
         content = file.read()
         playlist_data = json.loads(content)
         logger.info(f"Playlists file: {playlist_data}")
 
     async with SessionLocal() as session:
         for playlist_name, playlist_details in playlist_data.items():
-            playlist_exists = await session.execute(select(exists().where(
-                Playlist.id == playlist_name)))
+            playlist_exists = await session.execute(
+                select(exists().where(Playlist.id == playlist_name))
+            )
             logger.info(f"Playlist data: {playlist_name, playlist_details}")
             if not playlist_exists.scalar():
                 playlist = Playlist(
@@ -87,11 +91,11 @@ async def update_playlist_data_in_db(playlists_file):
 
 
 async def update_track_data_in_db(track_data_file):
-    with open(track_data_file, 'r') as file:
+    with open(track_data_file, "r") as file:
         content = file.read()
         logger.info(f"Tracks file: {track_data_file}")
     async with SessionLocal() as session:
-        json_objects = content.split('\n')
+        json_objects = content.split("\n")
         fixed_json_objects = []
 
         for json_str in json_objects:
@@ -101,24 +105,24 @@ async def update_track_data_in_db(track_data_file):
             except json.JSONDecodeError:
                 pass
 
-        fixed_result = '['
+        fixed_result = "["
 
         for i, json_obj in enumerate(fixed_json_objects):
             fixed_result += json.dumps(json_obj)
 
             if i < len(fixed_json_objects) - 1:
-                fixed_result += ','
+                fixed_result += ","
 
-        fixed_result += ']'
+        fixed_result += "]"
         track_data_list = json.loads(fixed_result)
         logger.info(f"Track file: {track_data_list}")
 
         for track_data in track_data_list:
             track_exists = await session.execute(
-                select(exists().where(Track.id == track_data["id"])))
+                select(exists().where(Track.id == track_data["id"]))
+            )
             if not track_exists.scalar():
-                album_total_tracks = track_data["album"].get(
-                    "total_tracks")
+                album_total_tracks = track_data["album"].get("total_tracks")
 
                 artists = track_data["album"].get("artists", [])
                 if artists:
