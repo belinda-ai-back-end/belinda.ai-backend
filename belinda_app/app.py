@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -5,9 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from belinda_app.routes import router
 from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
-from belinda_app.utils import setup_logger  # track
-
-import logging
+from belinda_app.utils import setup_logger
 
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,6 @@ async def on_startup():
     app.include_router(router)
     setup_logger()
     logger.error(settings)
-    # Добавление треков в базу
-    # await track()
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)

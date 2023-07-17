@@ -1,11 +1,6 @@
-# from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
-
-
-# if TYPE_CHECKING:
-#     from .playlists import Playlist
 
 
 class Track(SQLModel, table=True):
@@ -23,6 +18,3 @@ class Track(SQLModel, table=True):
     artist_name: str | None
     artist_href: str | None
     playlist_id: str | None
-    # playlist_id: str | None = Field(default=None, foreign_key="playlist.id")
-    # playlist: Optional["Playlist"] = Relationship(back_populates="track")
-

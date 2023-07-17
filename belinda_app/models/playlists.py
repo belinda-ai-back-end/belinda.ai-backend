@@ -1,5 +1,4 @@
 from typing import List, TYPE_CHECKING, Optional
-# from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel, Relationship
 

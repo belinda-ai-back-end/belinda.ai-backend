@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -23,3 +24,13 @@ async def init_db():
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
+
+
+async def check_database_health() -> bool:
+    try:
+        async with SessionLocal() as session:
+            await session.execute("SELECT 1")
+            await session.commit()
+            return True
+    except SQLAlchemyError:
+        return False
