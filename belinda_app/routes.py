@@ -90,7 +90,7 @@ async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
 
 
 # Добавление кураторов в базу
-@router.post("/upload_curators/")
+@router.post("/upload_curators")
 async def upload_curators(file: UploadFile = File(...)):
     try:
         contents = await file.read()
@@ -131,7 +131,7 @@ async def upload_curators(file: UploadFile = File(...)):
 
 
 # Добавление плейлистов в базу
-@router.post("/upload_playlists/")
+@router.post("/upload_playlists")
 async def upload_playlists(file: UploadFile = File(...)):
     contents = await file.read()
     playlist_data = json.loads(contents)
