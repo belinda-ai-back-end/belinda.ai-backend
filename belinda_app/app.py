@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from belinda_app.routes import router
 from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
-from belinda_app.utils import setup_logger, track
+from belinda_app.utils import setup_logger  # track
 
 logger = logging.getLogger(__name__)
 
