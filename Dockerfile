@@ -11,7 +11,7 @@ COPY . /app
 RUN pip3 install --no-cache-dir poetry
 
 # Install project dependencies
-RUN poetry install --no-root --no-dev
+RUN poetry install --no-root --no-dev --no-interaction
 
 # Expose port 8000
 EXPOSE 8000
