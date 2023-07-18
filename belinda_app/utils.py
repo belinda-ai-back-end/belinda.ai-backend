@@ -3,7 +3,7 @@ import logging
 
 from fastapi.logger import logger
 
-# from belinda_app.models import Track
+# from belinda_app.models import Curator, Playlist, Track
 # from belinda_app.db.database import SessionLocal
 
 
@@ -14,7 +14,67 @@ def setup_logger():
     logger.handlers = gunicorn_error_logger.handlers
 
 
-# Скрипт валидации json
+# async def curator():
+#     with open('curators.json', 'r') as file:
+#         content = file.read()
+#         curator_data = json.loads(content)
+#     async with SessionLocal() as session:
+#         for curator_name, curator_details in curator_data.items():
+#             curator = Curator(
+#                 name=curator_details["name"],
+#                 desc=curator_details["desc"],
+#                 facebook_link=curator_details["facebook_link"],
+#                 spotify_link=curator_details["spotify_link"],
+#                 instagram_link=curator_details["instagram_link"],
+#                 tiktok_link=curator_details["tiktok_link"],
+#                 twitter_link=curator_details["twitter_link"],
+#                 youtube_link=curator_details["youtube_link"],
+#                 apple_music_link=curator_details["apple_music_link"],
+#                 mixcloud_link=curator_details["mixcloud_link"],
+#                 twitch_link=curator_details["twitch_link"],
+#             )
+#             session.add(curator)
+#
+#         await session.commit()
+#     return {"message": "Data uploaded successfully"}
+#
+#
+# async def playlist():
+#     with open('playlists.json', 'r') as file:
+#         content = file.read()
+#         playlist_data = json.loads(content)
+#     async with SessionLocal() as session:
+#         for playlist_name, playlist_details in playlist_data.items():
+#             images = playlist_details.get("images", [])
+#             images_url = images[0]["url"] if images else None
+#
+#             playlist = Playlist(
+#                 id=playlist_name,
+#                 collaborative=playlist_details["collaborative"],
+#                 description=playlist_details["description"],
+#                 external_urls_spotify=playlist_details["external_urls"]["spotify"],
+#                 images=images,
+#                 images_url=images_url,
+#                 href=playlist_details["href"],
+#                 name=playlist_details["name"],
+#                 owner_id=playlist_details["owner"]["id"],
+#                 owner_display_name=playlist_details["owner"]["display_name"],
+#                 owner_href=playlist_details["owner"]["href"],
+#                 owner_short=playlist_details["owner_short"],
+#                 primary_color=playlist_details["primary_color"],
+#                 public=playlist_details["public"],
+#                 snapshot_id=playlist_details["snapshot_id"],
+#                 tracks_total=playlist_details["tracks"]["total"],
+#                 type=playlist_details["type"],
+#                 uri=playlist_details["uri"],
+#             )
+#             session.add(playlist)
+#
+#     await session.commit()
+#     return {"message": "Data uploaded successfully"}
+#
+#
+# # Скрипт валидации json
 # async def track():
 #     with open('tracks.json', 'r') as file:
 #         content = file.read()

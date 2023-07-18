@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from belinda_app.routes import router
-# from belinda_app.db.database import init_db
+from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
-from belinda_app.utils import setup_logger  # track
+from belinda_app.utils import setup_logger
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +21,13 @@ settings = get_settings()
 
 @app.on_event("startup")
 async def on_startup():
-    # await init_db()
+    await init_db()
     app.include_router(router)
     setup_logger()
     logger.error(settings)
     # await track()
+    # await playlist()
+    # await curator()
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
