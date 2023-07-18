@@ -20,4 +20,4 @@ EXPOSE 8000
 ENV PORT=8000
 
 # Start the FastAPI server using uvicorn
-CMD ["poetry", "run", "uvicorn", "belinda_app.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "poetry run gunicorn  -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 --log-level=debug belinda_app.app:app"]

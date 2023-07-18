@@ -20,6 +20,7 @@ sqlalchemy = "1.4.35"
 sqlmodel = "0.0.6"
 asyncpg = "^0.28.0"
 python-multipart = "^0.0.6"
+gunicorn = "^21.1.0"
 
 
 [build-system]
