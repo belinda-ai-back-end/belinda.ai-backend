@@ -8,11 +8,17 @@ class Settings(BaseSettings):
     SESSION_SECRET_KEY: str = Field(default=str(uuid.uuid4()))
     CORS_ORIGINS: str = "*"
 
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: SecretStr
-    POSTGRES_HOST: str
-    POSTGRES_PORT: str
-    POSTGRES_DB: str
+    POSTGRES_USER = "belinda_user"
+    POSTGRES_PASSWORD = "3gfF34GG"
+    POSTGRES_DB = "belinda_db"
+    POSTGRES_HOST = "postgres"
+    POSTGRES_PORT = "5432"
+
+    # POSTGRES_USER: str
+    # POSTGRES_PASSWORD: SecretStr
+    # POSTGRES_HOST: str
+    # POSTGRES_PORT: str
+    # POSTGRES_DB: str
 
     DATABASE_URI: str | None
 
