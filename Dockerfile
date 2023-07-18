@@ -7,14 +7,6 @@ WORKDIR /app
 # Copy the project files to the working directory
 COPY . /app
 
-COPY curators.json /app/curators.json
-
-COPY playlists.json /app/playlists.json
-
-COPY tracks.json /app/tracks.json
-
-COPY processed.txt /app/processed.txt
-
 # Install Poetry
 RUN pip3 install --no-cache-dir poetry
 
