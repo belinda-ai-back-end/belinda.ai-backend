@@ -16,8 +16,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: belinda_app
-#    env_file:
-#      - belinda_app/.env
+    env_file:
+      - belinda_app/.env
     networks:
       - default
     ports:

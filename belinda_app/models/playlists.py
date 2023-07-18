@@ -3,7 +3,6 @@ from typing import List, TYPE_CHECKING, Optional
 from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
-    # from .curators import Curator
     from .feedback import Feedback
 
 
@@ -13,9 +12,8 @@ class Playlist(SQLModel, table=True):
     description: str | None
     external_urls_spotify: str | None
     href: str | None
-    # images_url: str | None  # там находится List, возможна связь к отдельной таблицы Images
+    images_url: str | None
     name: str | None
-    # owner_id: UUID | None = Field(default_factory=uuid4, foreign_key="curator.id")
     owner_id: str | None
     owner_display_name: str | None
     owner_href: str | None
@@ -27,4 +25,3 @@ class Playlist(SQLModel, table=True):
     type: str | None
     uri: str | None
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="playlist")
-    # owner: Optional["Curator"] = Relationship(back_populates="playlist")
