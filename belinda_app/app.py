@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from belinda_app.routes import router
 from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
-from belinda_app.utils import setup_logger, track, playlist, curator
+from belinda_app.utils import setup_logger  # track, playlist, curator
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,9 @@ async def on_startup():
     app.include_router(router)
     setup_logger()
     logger.error(settings)
-    await track()
-    await playlist()
-    await curator()
+    # await track()
+    # await playlist()
+    # await curator()
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET_KEY)
