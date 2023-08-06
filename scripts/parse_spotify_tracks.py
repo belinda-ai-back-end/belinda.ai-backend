@@ -29,8 +29,6 @@ def form_nice_info(track):
 if __name__ == '__main__':
     # os.environ["SPOTIPY_CLIENT_ID"] =
     # os.environ["SPOTIPY_CLIENT_SECRET"] =
-    os.environ["SPOTIPY_CLIENT_ID"] = "ef7c4f9bec4a43d2bf1e51a0251a1cc4"
-    os.environ["SPOTIPY_CLIENT_SECRET"] = "97f6f1210e4045219ed699abdceb2f3c"
 
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
