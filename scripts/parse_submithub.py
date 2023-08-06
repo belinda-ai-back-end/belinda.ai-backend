@@ -12,8 +12,11 @@ class TaleoJobScraper(object):
         self.driver = webdriver.Chrome()
         self.driver.set_window_size(1500, 1000)
         self.wait = WebDriverWait(self.driver, 10)
-        with open("curators.json", "r") as f:
-            self.json_dict = json.load(f)
+        try:
+            with open("curators.json", "r") as f:
+                self.json_dict = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.json_dict = {}
         self.link = 'https://www.submithub.com/curators'
 
     def parse_one_curator(self, curator_soup: BeautifulSoup):
