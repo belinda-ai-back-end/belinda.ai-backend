@@ -4,6 +4,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from .feedback import Feedback
+    from .deals import Deal
 
 
 class Playlist(SQLModel, table=True):
@@ -25,3 +26,4 @@ class Playlist(SQLModel, table=True):
     type: str | None
     uri: str | None
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="playlist")
+    deal: Optional[List["Deal"]] = Relationship(back_populates="playlist")

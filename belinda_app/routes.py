@@ -2,15 +2,16 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Query
 from sqlalchemy import func, select, exists
 from starlette import status
 
 from belinda_app.settings import get_settings
 from belinda_app.models.feedback import RatingEnum
-from belinda_app.models import Playlist, User, Feedback, Curator
-from belinda_app.schemas.responses import HealthcheckResponse
+from belinda_app.models import Playlist, User, Feedback, Curator, Deal
+from belinda_app.schemas import HealthcheckResponse, CreateDealRequest, UpdateDealStatusRequest
 from belinda_app.db.database import SessionLocal, check_database_health
+from belinda_app.models.deals import TransactionStatusEnum
 
 settings = get_settings()
 
@@ -192,3 +193,38 @@ async def create_user(
     finally:
         await session.close()
     return {"message": "Data uploaded successfully"}
+
+
+# Создание сделки
+@router.post("/create_deal")
+async def create_deal(deal_request: CreateDealRequest) -> dict:
+    async with SessionLocal() as session:
+        try:
+            deal = Deal(**deal_request.dict(), status=TransactionStatusEnum.consideration)
+            session.add(deal)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Deal created successfully"}
+
+
+# Изменение статуса сделки
+@router.put("/update_deal_status/{deal_id}")
+async def update_deal_status(
+    deal_id: str,
+    status_request: UpdateDealStatusRequest,
+    status: TransactionStatusEnum = Query(..., description="Deal status")
+) -> dict:
+    async with SessionLocal() as session:
+        try:
+            deal = await session.get(Deal, deal_id)
+            if deal is None:
+                raise HTTPException(status_code=404, detail="Deal not found")
+
+            deal.status = status
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Deal status updated successfully"}
