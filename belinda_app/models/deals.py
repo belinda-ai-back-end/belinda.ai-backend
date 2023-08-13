@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -12,12 +12,21 @@ if TYPE_CHECKING:
     from .users import User
 
 
-class TransactionStatusEnum(str, Enum):
-    no_deal = "No deal"
-    consideration = "Consideration"
-    waiting = "Waiting"
-    check = "Checking"
-    complete = "Completed"
+class StatusKeyEnumForMusician(str, Enum):
+    submit = "Submit Application"
+    awaiting = "Awaiting review"
+    confirmed_payment = "Confirmed, awaiting payment"
+    confirmed_placement = "Confirmed, awaiting placement"
+    payment = "Placed - x days left until completion"
+    completed = "Completed, can be extended"
+
+
+class StatusKeyEnumForCurator(str, Enum):
+    confirm = "Confirm / Reject"
+    confirmed_payment_curator = "Confirmed, awaiting payment"
+    confirmed_placement_curator = "Confirmed, awaiting placement"
+    payment_curator = "Placed - x days left until completion"
+    completed_curator = "Completed, can be extended"
 
 
 class Deal(SQLModel, table=True):
@@ -27,7 +36,7 @@ class Deal(SQLModel, table=True):
     playlist_id: str = Field(default=None, foreign_key="playlist.id")
     user_id: str = Field(default=None, foreign_key="user.user_id")
     price: Decimal | None
-    status: TransactionStatusEnum | None = Field(default=TransactionStatusEnum.no_deal)
+    status: StatusKeyEnumForMusician | None = Field(default=StatusKeyEnumForMusician.submit)
     curator: "Curator" = Relationship(back_populates="deal")
     track: "Track" = Relationship(back_populates="deal")
     playlist: "Playlist" = Relationship(back_populates="deal")

@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from belinda_app.models.deals import TransactionStatusEnum
 
 
 class CreateDealRequest(BaseModel):
@@ -9,6 +8,3 @@ class CreateDealRequest(BaseModel):
     user_id: str
     price: int
 
-
-class UpdateDealStatusRequest(BaseModel):
-    status: TransactionStatusEnum
