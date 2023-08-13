@@ -17,8 +17,8 @@ class RatingEnum(str, Enum):
 
 class Feedback(SQLModel, table=True):
     feedback_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    playlist_id: str | None = Field(default=None, foreign_key="playlist.id")
-    user_id: str | None = Field(default=None, foreign_key="user.user_id")
+    playlist_id: str = Field(default=None, foreign_key="playlist.id")
+    user_id: str = Field(default=None, foreign_key="user.user_id")
     rating: RatingEnum | None = Field(default=RatingEnum.unlike)
     playlist: List["Playlist"] = Relationship(back_populates="feedback")
     user: "User" = Relationship(back_populates="feedback")

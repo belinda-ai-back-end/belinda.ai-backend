@@ -1,6 +1,11 @@
 from uuid import UUID, uuid4
 
-from sqlmodel import Field, SQLModel
+from typing import List, TYPE_CHECKING, Optional
+
+from sqlmodel import Field, SQLModel, Relationship
+
+if TYPE_CHECKING:
+    from .deals import Deal
 
 
 class Track(SQLModel, table=True):
@@ -18,3 +23,4 @@ class Track(SQLModel, table=True):
     artist_name: str | None
     artist_href: str | None
     playlist_id: str | None
+    deal: Optional[List["Deal"]] = Relationship(back_populates="track")

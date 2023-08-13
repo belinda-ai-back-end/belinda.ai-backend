@@ -4,6 +4,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from .feedback import Feedback
+    from .deals import Deal
 
 
 class User(SQLModel, table=True):
@@ -23,3 +24,4 @@ class User(SQLModel, table=True):
     track_overview: str | None
     similar_artist: str | None
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="user")
+    deal: Optional[List["Deal"]] = Relationship(back_populates="user")

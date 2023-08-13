@@ -2,15 +2,17 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends
 from sqlalchemy import func, select, exists
 from starlette import status
 
 from belinda_app.settings import get_settings
-from belinda_app.models.feedback import RatingEnum
-from belinda_app.models import Playlist, User, Feedback, Curator
-from belinda_app.schemas.responses import HealthcheckResponse
-from belinda_app.db.database import SessionLocal, check_database_health
+from belinda_app.services import update_deal_status, RoleEnum
+from belinda_app.models import (Playlist, User, Feedback, Curator, Deal, StatusKeyEnumForMusician,
+                                StatusKeyEnumForCurator, RatingEnum)
+from belinda_app.schemas import HealthcheckResponse, CreateDealRequest
+from belinda_app.db.database import SessionLocal, check_database_health, get_session
+
 
 settings = get_settings()
 
@@ -192,3 +194,37 @@ async def create_user(
     finally:
         await session.close()
     return {"message": "Data uploaded successfully"}
+
+
+# Создание сделки
+@router.post("/create_deal")
+async def create_deal(deal_request: CreateDealRequest) -> dict:
+    async with SessionLocal() as session:
+        try:
+            deal = Deal(**deal_request.dict(), status=StatusKeyEnumForMusician.submit)
+            session.add(deal)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Deal created successfully"}
+
+
+@router.put("/update_deal_status/curator/{deal_id}")
+async def update_curator_deal_status(
+    deal_id: str,
+    new_status: StatusKeyEnumForCurator,
+    session: SessionLocal = Depends(get_session)
+):
+    await update_deal_status(session, deal_id, RoleEnum.curator, new_status)
+    return {"message": "Deal status updated successfully for curator"}
+
+
+@router.put("/update_deal_status/musician/{deal_id}")
+async def update_musician_deal_status(
+    deal_id: str,
+    new_status: StatusKeyEnumForMusician,
+    session: SessionLocal = Depends(get_session)
+):
+    await update_deal_status(session, deal_id, RoleEnum.musician, new_status)
+    return {"message": "Deal status updated successfully for musician"}
