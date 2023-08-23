@@ -2,9 +2,9 @@
 import logging
 
 from fastapi.logger import logger
-
+from belinda_app.models import Track
 # from belinda_app.models import Curator, Playlist, Track
-# from belinda_app.db.database import SessionLocal
+from belinda_app.db.database import SessionLocal
 
 
 def setup_logger():
