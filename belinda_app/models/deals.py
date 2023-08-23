@@ -37,6 +37,7 @@ class Deal(SQLModel, table=True):
     musician_id: UUID = Field(default=None, foreign_key="musician.musician_id")
     price: Decimal | None
     status: StatusKeyEnumForMusician | None = Field(default=StatusKeyEnumForMusician.submit)
+
     curator: Optional["Curator"] = Relationship(back_populates="deal")
     playlist: Optional["Playlist"] = Relationship(back_populates="deal")
     musician_track: Optional["MusicianTrack"] = Relationship(back_populates="deal")

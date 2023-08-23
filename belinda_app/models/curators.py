@@ -20,4 +20,5 @@ class Curator(SQLModel, table=True):
     apple_music_link: str | None
     mixcloud_link: str | None
     twitch_link: str | None
+
     deal: Optional[List["Deal"]] = Relationship(back_populates="curator")

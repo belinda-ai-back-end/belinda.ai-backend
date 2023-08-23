@@ -2,16 +2,19 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Body, status
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Response, status
 from sqlalchemy import func, select, exists
+from starlette.responses import JSONResponse
 
 from belinda_app.settings import get_settings
-from belinda_app.services import update_deal_status, RoleEnum
+from belinda_app.services import (update_deal_status, RoleEnum, authenticate_user,
+                                  create_access_token, get_current_user)
+from belinda_app.services.auth_service import pwd_context   # позже исправить
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
                                 StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
-from belinda_app.schemas import HealthcheckResponse, CreateDealRequest
+from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest,
+                                 CreateCuratorRequest, CreateMusicianTrackRequest)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
-
 
 settings = get_settings()
 
@@ -182,26 +185,33 @@ async def upload_playlists(file: UploadFile = File(...)):
 # Добавление музыкантов в базу
 @router.post("/create_musician")
 async def create_musician(
-    musician: Musician = Body(...),
+    musician_request: CreateMusicianRequest,
 ) -> dict:
     async with SessionLocal() as session:
         try:
-            session.add(musician)
+            hashed_password = pwd_context.hash(musician_request.password)
+            musician_request.password = hashed_password
+            musician_db = Musician(**musician_request.dict())
+            session.add(musician_db)
             await session.commit()
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))
         finally:
             await session.close()
-        return {"message": "Data uploaded successfully"}
+        return {"message": "Musician added successfully"}
 
 
 # Добавление трека музыканта в базу
 @router.post("/create_musician_track")
-async def add_musician_track(musician_track: MusicianTrack):
+async def create_musician_track(
+    musician_track_request: CreateMusicianTrackRequest
+) -> dict:
+    musician_track_data = MusicianTrack(**musician_track_request.dict())
+
     async with SessionLocal() as session:
         try:
-            session.add(musician_track)
+            session.add(musician_track_data)
             await session.commit()
         except Exception as e:
             await session.rollback()
@@ -212,11 +222,13 @@ async def add_musician_track(musician_track: MusicianTrack):
 # Добавление кураторов в базу
 @router.post("/create_curator")
 async def create_curator(
-    curator: Curator = Body(...),
+    curator_request: CreateCuratorRequest,
 ) -> dict:
+    curator_data = Curator(**curator_request.dict())
+
     async with SessionLocal() as session:
         try:
-            session.add(curator)
+            session.add(curator_data)
             await session.commit()
         except Exception as e:
             await session.rollback()
@@ -238,6 +250,26 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
             await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))
         return {"message": "Deal created successfully"}
+
+
+@router.post("/token/")
+async def login_for_access_token(login: str, password: str, response: Response):
+    db = SessionLocal()
+    user = await authenticate_user(login, password=password, db=db)
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    access_token = create_access_token({"sub": user.login})
+
+    response = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
+
+    return response
+
+
+@router.get("/protected_data/")
+async def get_protected_data(current_user: Musician = Depends(get_current_user)):
+    return {"message": "This is protected data.", "user": current_user}
 
 
 # Выдача всех треков для musician

@@ -20,5 +20,6 @@ class Feedback(SQLModel, table=True):
     playlist_id: str = Field(default=None, foreign_key="playlist.id")
     musician_id: UUID = Field(default=None, foreign_key="musician.musician_id")
     rating: RatingEnum | None = Field(default=RatingEnum.unlike)
+
     playlist: List["Playlist"] = Relationship(back_populates="feedback")
     musician: "Musician" = Relationship(back_populates="feedback")
