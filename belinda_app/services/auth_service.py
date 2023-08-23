@@ -3,9 +3,9 @@ import hashlib
 import base64
 import json
 
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 
@@ -61,33 +61,22 @@ async def authenticate_user(login: str, password: str, db: AsyncSession):
     return musician
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_session)):
-    try:
-        token_parts = token.split(".")
-        if len(token_parts) != 3:
-            raise HTTPException(status_code=401, detail="Invalid token format")
+async def get_current_musician(
+    musician_id: str = Cookie(default=None),
+    db: AsyncSession = Depends(get_session)
+):
+    if musician_id is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-        header, payload, provided_signature = token_parts
-        signature_payload = f"{header}.{payload}".encode("utf-8")
-        expected_signature = hmac.new(SECRET_KEY.encode("utf-8"), signature_payload, hashlib.sha256)
-        expected_signature_encoded = base64.urlsafe_b64encode(expected_signature.digest()).rstrip(b"=").decode("utf-8")
+    session = await db.execute(
+        select(UserSession)
+        .where(UserSession.musician_id == musician_id)
+        .order_by(desc(UserSession.created_at))
+        .limit(1)
+    )
+    user_session = session.scalar_one_or_none()
 
-        if not hmac.compare_digest(provided_signature, expected_signature_encoded):
-            raise HTTPException(status_code=401, detail="Invalid token signature")
-
-        payload_data = json.loads(base64.urlsafe_b64decode(payload + "==="))
-        login = payload_data.get("sub")
-        if login is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = await db.execute(select(Musician).where(Musician.login == login))
-    user = user.fetchone()
-    if not user:
+    if user_session is None:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return user
+    return {"access_token": user_session.access_token}

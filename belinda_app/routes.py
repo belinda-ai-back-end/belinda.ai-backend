@@ -2,15 +2,13 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, status
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Response, status
 from sqlalchemy import func, select, exists
 
 from belinda_app.settings import get_settings
-from belinda_app.services import (update_deal_status, RoleEnum, authenticate_user,
-                                  create_access_token)
-from belinda_app.services.auth_service import pwd_context   # позже исправить
+from belinda_app.services import update_deal_status, RoleEnum, get_current_musician, pwd_context, create_access_token
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
-                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
+                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack, UserSession)
 from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest,
                                  CreateCuratorRequest, CreateMusicianTrackRequest)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
@@ -26,7 +24,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 async def healthcheck(request: Request):
     database_status = await check_database_health()
     uptime = (
-        datetime.now() - datetime.fromtimestamp(psutil.boot_time())
+            datetime.now() - datetime.fromtimestamp(psutil.boot_time())
     ).total_seconds()
     response_status = "OK" if database_status else "Failed"
 
@@ -93,7 +91,8 @@ async def get_deals_for_curator(curator_id: str):
 async def get_deals_for_track(track_id: str):
     async with SessionLocal() as session:
         try:
-            musician_track_result = await session.execute(select(MusicianTrack).where(MusicianTrack.track_id == track_id))
+            musician_track_result = await session.execute(
+                select(MusicianTrack).where(MusicianTrack.track_id == track_id))
             musician_track = musician_track_result.scalar_one_or_none()
             if not musician_track:
                 raise HTTPException(status_code=404, detail="MusicianTrack not found")
@@ -105,6 +104,11 @@ async def get_deals_for_track(track_id: str):
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/get_token")
+async def get_token(current_musician_token: dict = Depends(get_current_musician)):
+    return current_musician_token
 
 
 @router.post("/feedback")
@@ -130,8 +134,8 @@ async def set_feedback(musician_id: str, playlist_id: str, rating: RatingEnum):
                 if feedback.rating == RatingEnum.like and rating == RatingEnum.unlike:
                     message = "Delete like"
                 elif (
-                    feedback.rating == RatingEnum.dislike
-                    and rating == RatingEnum.unlike
+                        feedback.rating == RatingEnum.dislike
+                        and rating == RatingEnum.unlike
                 ):
                     message = "Delete dislike"
                 else:
@@ -240,10 +244,37 @@ async def upload_playlists(file: UploadFile = File(...)):
             await session.close()
 
 
+# Метод для создания сессии пользователя
+
+@router.post("/login")
+async def login(username: str, password: str, response: Response):
+    async with SessionLocal() as session:
+        musician = await session.execute(select(Musician).where(Musician.login == username))
+        musician = musician.scalar_one_or_none()
+        if musician and pwd_context.verify(password, musician.password):
+            access_token = create_access_token({"sub": musician.login})
+
+            user_session = UserSession(musician_id=musician.musician_id, access_token=access_token)
+            session.add(user_session)
+            await session.commit()
+
+            response.set_cookie(key="musician_id", value=str(musician.musician_id))
+            return {"message": "Login successful"}
+        else:
+            raise HTTPException(status_code=401, detail="Incorrect username or password")
+
+
+# Метод для разлогинивания пользователя
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="musician_id")
+    return {"message": "Logged out"}
+
+
 # Добавление музыкантов в базу
 @router.post("/create_musician")
 async def create_musician(
-    musician_request: CreateMusicianRequest,
+        musician_request: CreateMusicianRequest,
 ) -> dict:
     async with SessionLocal() as session:
         try:
@@ -263,7 +294,7 @@ async def create_musician(
 # Добавление трека музыканта в базу
 @router.post("/create_musician_track")
 async def create_musician_track(
-    musician_track_request: CreateMusicianTrackRequest
+        musician_track_request: CreateMusicianTrackRequest
 ) -> dict:
     musician_track_data = MusicianTrack(**musician_track_request.dict())
 
@@ -280,7 +311,7 @@ async def create_musician_track(
 # Добавление кураторов в базу
 @router.post("/create_curator")
 async def create_curator(
-    curator_request: CreateCuratorRequest,
+        curator_request: CreateCuratorRequest,
 ) -> dict:
     curator_data = Curator(**curator_request.dict())
 
@@ -322,23 +353,11 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
 #         return {"password": hashed_password}
 
 
-@router.post("/create_token")
-async def login_for_access_token(login: str, password: str):
-    db = SessionLocal()
-    musician = await authenticate_user(login, password=password, db=db)
-    if not musician:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-
-    access_token = create_access_token({"sub": musician.login})
-
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
 @router.put("/update_deal_status/curator/{deal_id}")
 async def update_curator_deal_status(
-    deal_id: str,
-    new_status: StatusKeyEnumForCurator,
-    session: SessionLocal = Depends(get_session)
+        deal_id: str,
+        new_status: StatusKeyEnumForCurator,
+        session: SessionLocal = Depends(get_session)
 ):
     await update_deal_status(session, deal_id, RoleEnum.curator, new_status)
     return {"message": "Deal status updated successfully for curator"}
@@ -346,9 +365,9 @@ async def update_curator_deal_status(
 
 @router.put("/update_deal_status/musician/{deal_id}")
 async def update_musician_deal_status(
-    deal_id: str,
-    new_status: StatusKeyEnumForMusician,
-    session: SessionLocal = Depends(get_session)
+        deal_id: str,
+        new_status: StatusKeyEnumForMusician,
+        session: SessionLocal = Depends(get_session)
 ):
     await update_deal_status(session, deal_id, RoleEnum.musician, new_status)
     return {"message": "Deal status updated successfully for musician"}
