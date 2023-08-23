@@ -20,7 +20,6 @@ class Musician(SQLModel, table=True):
     artist_name: str | None
     artist_link: str | None
     origin: str | None
-    musician_track_id: UUID = Field(default=None, foreign_key="musician_track.track_id")
     musician_track: Optional["MusicianTrack"] = Relationship(back_populates="musician")
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="musician")
     deal: Optional[List["Deal"]] = Relationship(back_populates="musician")

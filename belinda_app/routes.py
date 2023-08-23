@@ -2,14 +2,13 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Body, status
 from sqlalchemy import func, select, exists
-from starlette import status
 
 from belinda_app.settings import get_settings
 from belinda_app.services import update_deal_status, RoleEnum
-from belinda_app.models import (Playlist, User, Feedback, Curator, Deal, StatusKeyEnumForMusician,
-                                StatusKeyEnumForCurator, RatingEnum)
+from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
+                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
 from belinda_app.schemas import HealthcheckResponse, CreateDealRequest
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
 
@@ -17,6 +16,7 @@ from belinda_app.db.database import SessionLocal, check_database_health, get_ses
 settings = get_settings()
 
 router = APIRouter()
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 # Проверка статуса базы
@@ -47,9 +47,9 @@ async def get_playlists():
 
 
 @router.post("/feedback")
-async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
+async def set_feedback(musician_id: str, playlist_id: str, rating: RatingEnum):
     async with SessionLocal() as session:
-        stmt_user = await session.execute(select(User).where(User.user_id == user_id))
+        stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
         user = stmt_user.scalar_one_or_none()
 
         stmt_playlist = await session.execute(
@@ -60,7 +60,7 @@ async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
         if user is not None and playlist is not None:
             feedback_result = await session.execute(
                 select(Feedback).where(
-                    Feedback.user_id == user_id, Feedback.playlist_id == playlist_id
+                    Feedback.musician_id == musician_id, Feedback.playlist_id == playlist_id
                 )
             )
             feedback = feedback_result.scalar_one_or_none()
@@ -78,7 +78,7 @@ async def set_feedback(user_id: str, playlist_id: str, rating: RatingEnum):
                 feedback.rating = rating
             else:
                 feedback = Feedback(
-                    user_id=user_id, playlist_id=playlist_id, rating=rating
+                    musician_id=musician_id, playlist_id=playlist_id, rating=rating
                 )
                 message = f"Set {rating.capitalize()}"
                 session.add(feedback)
@@ -179,21 +179,51 @@ async def upload_playlists(file: UploadFile = File(...)):
             await session.close()
 
 
-# Добавление пользователей в базу
-@router.post("/create_user")
-async def create_user(
-    user: User,
+# Добавление музыкантов в базу
+@router.post("/create_musician")
+async def create_musician(
+    musician: Musician = Body(...),
 ) -> dict:
-    session = SessionLocal()
-    try:
-        session.add(user)
-        await session.commit()
-    except Exception as e:
-        await session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await session.close()
-    return {"message": "Data uploaded successfully"}
+    async with SessionLocal() as session:
+        try:
+            session.add(musician)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            await session.close()
+        return {"message": "Data uploaded successfully"}
+
+
+# Добавление трека музыканта в базу
+@router.post("/create_musician_track")
+async def add_musician_track(musician_track: MusicianTrack):
+    async with SessionLocal() as session:
+        try:
+            session.add(musician_track)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Musician track added successfully"}
+
+
+# Добавление кураторов в базу
+@router.post("/create_curator")
+async def create_curator(
+    curator: Curator = Body(...),
+) -> dict:
+    async with SessionLocal() as session:
+        try:
+            session.add(curator)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            await session.close()
+        return {"message": "Curator data uploaded successfully"}
 
 
 # Создание сделки
@@ -208,6 +238,65 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
             await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))
         return {"message": "Deal created successfully"}
+
+
+# Выдача всех треков для musician
+@router.get("/get_tracks_for_musician/{musician_id}")
+async def get_tracks_for_musician(musician_id: str):
+    async with SessionLocal() as session:
+        try:
+            musician_result = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
+            musician = musician_result.scalar_one_or_none()
+            if not musician:
+                raise HTTPException(status_code=404, detail="Musician not found")
+
+            tracks_result = await session.execute(select(MusicianTrack).where(MusicianTrack.musician_id == musician_id))
+            tracks = tracks_result.scalars().all()
+
+            return tracks
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# Выдача всех сделок для curator
+
+@router.get("/get_deals_for_curator/{curator_id}")
+async def get_deals_for_curator(curator_id: str):
+    async with SessionLocal() as session:
+        try:
+            curator_result = await session.execute(select(Curator).where(Curator.curator_id == curator_id))
+            curator = curator_result.scalar_one_or_none()
+            if not curator:
+                raise HTTPException(status_code=404, detail="Curator not found")
+
+            deals_result = await session.execute(select(Deal).where(Deal.curator_id == curator_id))
+            deals = deals_result.scalars().all()
+
+            return deals
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# Выдача всех сделок musician_track, которые учавствуют в ней
+
+@router.get("/get_deals_for_track/{musician_track_id}")
+async def get_deals_for_track(track_id: str):
+    async with SessionLocal() as session:
+        try:
+            musician_track_result = await session.execute(select(MusicianTrack).where(MusicianTrack.track_id == track_id))
+            musician_track = musician_track_result.scalar_one_or_none()
+            if not musician_track:
+                raise HTTPException(status_code=404, detail="MusicianTrack not found")
+
+            deals_result = await session.execute(select(Deal).where(Deal.musician_track_id == track_id))
+            deals = deals_result.scalars().all()
+
+            return deals
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/update_deal_status/curator/{deal_id}")
