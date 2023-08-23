@@ -2,13 +2,12 @@ import json
 from datetime import datetime
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Response, status
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, status
 from sqlalchemy import func, select, exists
-from starlette.responses import JSONResponse
 
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, authenticate_user,
-                                  create_access_token, get_current_user)
+                                  create_access_token)
 from belinda_app.services.auth_service import pwd_context   # позже исправить
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
                                 StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
@@ -47,6 +46,65 @@ async def get_playlists():
         random_playlists = query.scalars().all()
 
     return random_playlists
+
+
+# Выдача всех треков для musician
+@router.get("/get_tracks_for_musician/{musician_id}")
+async def get_tracks_for_musician(musician_id: str):
+    async with SessionLocal() as session:
+        try:
+            musician_result = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
+            musician = musician_result.scalar_one_or_none()
+            if not musician:
+                raise HTTPException(status_code=404, detail="Musician not found")
+
+            tracks_result = await session.execute(select(MusicianTrack).where(MusicianTrack.musician_id == musician_id))
+            tracks = tracks_result.scalars().all()
+
+            return tracks
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# Выдача всех сделок для curator
+
+@router.get("/get_deals_for_curator/{curator_id}")
+async def get_deals_for_curator(curator_id: str):
+    async with SessionLocal() as session:
+        try:
+            curator_result = await session.execute(select(Curator).where(Curator.curator_id == curator_id))
+            curator = curator_result.scalar_one_or_none()
+            if not curator:
+                raise HTTPException(status_code=404, detail="Curator not found")
+
+            deals_result = await session.execute(select(Deal).where(Deal.curator_id == curator_id))
+            deals = deals_result.scalars().all()
+
+            return deals
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# Выдача всех сделок musician_track, которые учавствуют в ней
+
+@router.get("/get_deals_for_track/{musician_track_id}")
+async def get_deals_for_track(track_id: str):
+    async with SessionLocal() as session:
+        try:
+            musician_track_result = await session.execute(select(MusicianTrack).where(MusicianTrack.track_id == track_id))
+            musician_track = musician_track_result.scalar_one_or_none()
+            if not musician_track:
+                raise HTTPException(status_code=404, detail="MusicianTrack not found")
+
+            deals_result = await session.execute(select(Deal).where(Deal.musician_track_id == track_id))
+            deals = deals_result.scalars().all()
+
+            return deals
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/feedback")
@@ -252,83 +310,28 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
         return {"message": "Deal created successfully"}
 
 
-@router.post("/token/")
-async def login_for_access_token(login: str, password: str, response: Response):
+# @router.get("/get_password")
+# async def get_password(login: str):
+#     async with SessionLocal() as session:
+#         musician = await session.execute(select(Musician.password).where(Musician.login == login))
+#         hashed_password = musician.scalar_one_or_none()
+#
+#         if hashed_password is None:
+#             raise HTTPException(status_code=404, detail="User not found")
+#
+#         return {"password": hashed_password}
+
+
+@router.post("/create_token")
+async def login_for_access_token(login: str, password: str):
     db = SessionLocal()
-    user = await authenticate_user(login, password=password, db=db)
-    if not user:
+    musician = await authenticate_user(login, password=password, db=db)
+    if not musician:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
-    access_token = create_access_token({"sub": user.login})
+    access_token = create_access_token({"sub": musician.login})
 
-    response = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
-
-    return response
-
-
-@router.get("/protected_data/")
-async def get_protected_data(current_user: Musician = Depends(get_current_user)):
-    return {"message": "This is protected data.", "user": current_user}
-
-
-# Выдача всех треков для musician
-@router.get("/get_tracks_for_musician/{musician_id}")
-async def get_tracks_for_musician(musician_id: str):
-    async with SessionLocal() as session:
-        try:
-            musician_result = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
-            musician = musician_result.scalar_one_or_none()
-            if not musician:
-                raise HTTPException(status_code=404, detail="Musician not found")
-
-            tracks_result = await session.execute(select(MusicianTrack).where(MusicianTrack.musician_id == musician_id))
-            tracks = tracks_result.scalars().all()
-
-            return tracks
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-
-
-# Выдача всех сделок для curator
-
-@router.get("/get_deals_for_curator/{curator_id}")
-async def get_deals_for_curator(curator_id: str):
-    async with SessionLocal() as session:
-        try:
-            curator_result = await session.execute(select(Curator).where(Curator.curator_id == curator_id))
-            curator = curator_result.scalar_one_or_none()
-            if not curator:
-                raise HTTPException(status_code=404, detail="Curator not found")
-
-            deals_result = await session.execute(select(Deal).where(Deal.curator_id == curator_id))
-            deals = deals_result.scalars().all()
-
-            return deals
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-
-
-# Выдача всех сделок musician_track, которые учавствуют в ней
-
-@router.get("/get_deals_for_track/{musician_track_id}")
-async def get_deals_for_track(track_id: str):
-    async with SessionLocal() as session:
-        try:
-            musician_track_result = await session.execute(select(MusicianTrack).where(MusicianTrack.track_id == track_id))
-            musician_track = musician_track_result.scalar_one_or_none()
-            if not musician_track:
-                raise HTTPException(status_code=404, detail="MusicianTrack not found")
-
-            deals_result = await session.execute(select(Deal).where(Deal.musician_track_id == track_id))
-            deals = deals_result.scalars().all()
-
-            return deals
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.put("/update_deal_status/curator/{deal_id}")

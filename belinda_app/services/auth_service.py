@@ -9,7 +9,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 
-from belinda_app.models import Musician
+from belinda_app.models import Musician, UserSession
 from belinda_app.settings import get_settings
 from belinda_app.db.database import get_session
 
@@ -48,11 +48,15 @@ def create_access_token(data: dict):
 
 
 async def authenticate_user(login: str, password: str, db: AsyncSession):
-    musician = await db.execute(select(Musician).where(Musician.login == login))
-    musician = musician.fetchone()
+    result = await db.execute(select(Musician).where(Musician.login == login))
+    musician = result.scalar_one_or_none()
 
-    if not musician or not verify_password(password, musician.password):
+    if musician is None or not pwd_context.verify(password, musician.password):
         return None
+
+    session = UserSession(musician_id=musician.musician_id, access_token=create_access_token({"sub": musician.login}))
+    db.add(session)
+    await db.commit()
 
     return musician
 
