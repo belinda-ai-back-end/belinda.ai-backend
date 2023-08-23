@@ -259,7 +259,7 @@ async def login(username: str, password: str, response: Response):
             await session.commit()
 
             response.set_cookie(key="musician_id", value=str(musician.musician_id))
-            return {"message": "Login successful"}
+            return {"message": "Login successful", "musician_id": musician.musician_id}
         else:
             raise HTTPException(status_code=401, detail="Incorrect username or password")
 
@@ -273,9 +273,7 @@ async def logout(response: Response):
 
 # Добавление музыкантов в базу
 @router.post("/create_musician")
-async def create_musician(
-        musician_request: CreateMusicianRequest,
-) -> dict:
+async def create_musician(musician_request: CreateMusicianRequest) -> dict:
     async with SessionLocal() as session:
         try:
             hashed_password = pwd_context.hash(musician_request.password)
@@ -283,12 +281,11 @@ async def create_musician(
             musician_db = Musician(**musician_request.dict())
             session.add(musician_db)
             await session.commit()
+
+            return {"message": "Musician added successfully", "musician": musician_db}
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            await session.close()
-        return {"message": "Musician added successfully"}
 
 
 # Добавление трека музыканта в базу
