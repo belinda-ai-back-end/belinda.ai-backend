@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import SQLModel
 
-# from belinda_app.models import Feedback, User, Curator, Track, Playlist, Deal  # Добавление моделей в базу
+# from belinda_app.models import Feedback, Curator, Track, Playlist, Deal, Musician, MusicianTrack  # Добавление моделей в базу
 from belinda_app.settings import get_settings
 
 settings = get_settings()
