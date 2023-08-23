@@ -25,5 +25,6 @@ class Playlist(SQLModel, table=True):
     tracks_total: int
     type: str | None
     uri: str | None
+
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="playlist")
     deal: Optional[List["Deal"]] = Relationship(back_populates="playlist")
