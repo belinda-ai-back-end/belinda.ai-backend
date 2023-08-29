@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class CreateCuratorRequest(BaseModel):
+    login: Optional[str]
+    password: Optional[str]
     name: Optional[str]
     desc: Optional[str]
     facebook_link: Optional[str]

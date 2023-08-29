@@ -5,10 +5,13 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from .deals import Deal
+    from .sessions import UserSession
 
 
 class Curator(SQLModel, table=True):
     curator_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    login: str | None
+    password: str | None
     name: str | None
     desc: str | None
     facebook_link: str | None
@@ -22,3 +25,4 @@ class Curator(SQLModel, table=True):
     twitch_link: str | None
 
     deal: Optional[List["Deal"]] = Relationship(back_populates="curator")
+    user_session: Optional[List["UserSession"]] = Relationship(back_populates="curator")
