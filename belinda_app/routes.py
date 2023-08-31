@@ -1,12 +1,11 @@
-import json
 from uuid import UUID
 
 from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, status
+from fastapi import Request, APIRouter, HTTPException, Depends, status
 
-from sqlalchemy import func, select, exists
+from sqlalchemy import func, select
 
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, create_access_token,
@@ -190,7 +189,8 @@ async def login_musician(request: MusicianLogin):
         access_token = create_access_token(str(musician.musician_id), expires_delta)
 
         await MusicianAuthorizationService.create_musician_session(session, musician.musician_id, access_token)
-        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer"}
+        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer",
+                "musician_id": musician.musician_id}
 
 
 @router.post("/logout/musician")
@@ -223,7 +223,8 @@ async def login_curator(request: CuratorLogin):
         access_token = create_access_token(str(curator.curator_id), expires_delta)
 
         await CuratorAuthorizationService.create_curator_session(session, curator.curator_id, access_token)
-        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer"}
+        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer",
+                "curator_id": curator.musician_id}
 
 
 @router.post("/logout/curator")
@@ -255,88 +256,88 @@ async def update_musician_deal_status(
 
 
 # Добавление кураторов в базу (не тыкать)
-@router.post("/upload_curators")
-async def upload_curators(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        curator_data = json.loads(contents)
+# @router.post("/upload_curators")
+# async def upload_curators(file: UploadFile = File(...)):
+#     try:
+#         contents = await file.read()
+#         curator_data = json.loads(contents)
+#
+#         async with SessionLocal() as session:
+#             try:
+#                 for curator_name, curator_details in curator_data.items():
+#                     curator_exists = await session.execute(select(exists().where(
+#                         Curator.name == curator_name)))
+#                     if not curator_exists.scalar():
+#                         curator = Curator(
+#                             name=curator_details["name"],
+#                             desc=curator_details["desc"],
+#                             facebook_link=curator_details["facebook_link"],
+#                             spotify_link=curator_details["spotify_link"],
+#                             instagram_link=curator_details["instagram_link"],
+#                             tiktok_link=curator_details["tiktok_link"],
+#                             twitter_link=curator_details["twitter_link"],
+#                             youtube_link=curator_details["youtube_link"],
+#                             apple_music_link=curator_details["apple_music_link"],
+#                             mixcloud_link=curator_details["mixcloud_link"],
+#                             twitch_link=curator_details["twitch_link"],
+#                         )
+#                         session.add(curator)
+#
+#                 await session.commit()
+#
+#                 return {"message": "Data uploaded successfully"}
+#             except Exception as e:
+#                 await session.rollback()
+#                 raise HTTPException(status_code=500, detail=str(e))
+#             finally:
+#                 await session.close()
+#
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail="Failed to read JSON file")
 
-        async with SessionLocal() as session:
-            try:
-                for curator_name, curator_details in curator_data.items():
-                    curator_exists = await session.execute(select(exists().where(
-                        Curator.name == curator_name)))
-                    if not curator_exists.scalar():
-                        curator = Curator(
-                            name=curator_details["name"],
-                            desc=curator_details["desc"],
-                            facebook_link=curator_details["facebook_link"],
-                            spotify_link=curator_details["spotify_link"],
-                            instagram_link=curator_details["instagram_link"],
-                            tiktok_link=curator_details["tiktok_link"],
-                            twitter_link=curator_details["twitter_link"],
-                            youtube_link=curator_details["youtube_link"],
-                            apple_music_link=curator_details["apple_music_link"],
-                            mixcloud_link=curator_details["mixcloud_link"],
-                            twitch_link=curator_details["twitch_link"],
-                        )
-                        session.add(curator)
 
-                await session.commit()
-
-                return {"message": "Data uploaded successfully"}
-            except Exception as e:
-                await session.rollback()
-                raise HTTPException(status_code=500, detail=str(e))
-            finally:
-                await session.close()
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Failed to read JSON file")
-
-
-# Добавление плейлистов в базу (не тыкать)
-@router.post("/upload_playlists")
-async def upload_playlists(file: UploadFile = File(...)):
-    contents = await file.read()
-    playlist_data = json.loads(contents)
-
-    async with SessionLocal() as session:
-        try:
-            for playlist_name, playlist_details in playlist_data.items():
-                playlist_exists = await session.execute(select(exists().where(
-                    Playlist.id == playlist_name)))
-                if not playlist_exists.scalar():
-                    images = playlist_details.get("images", [])
-                    images_url = images[0]["url"] if images else None
-
-                    playlist = Playlist(
-                        id=playlist_name,
-                        collaborative=playlist_details["collaborative"],
-                        description=playlist_details["description"],
-                        external_urls_spotify=playlist_details["external_urls"]["spotify"],
-                        images=images,
-                        images_url=images_url,
-                        href=playlist_details["href"],
-                        name=playlist_details["name"],
-                        owner_id=playlist_details["owner"]["id"],
-                        owner_display_name=playlist_details["owner"]["display_name"],
-                        owner_href=playlist_details["owner"]["href"],
-                        owner_short=playlist_details["owner_short"],
-                        primary_color=playlist_details["primary_color"],
-                        public=playlist_details["public"],
-                        snapshot_id=playlist_details["snapshot_id"],
-                        tracks_total=playlist_details["tracks"]["total"],
-                        type=playlist_details["type"],
-                        uri=playlist_details["uri"],
-                    )
-                    session.add(playlist)
-
-            await session.commit()
-
-            return {"message": "Data uploaded successfully"}
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            await session.close()
+# Добавление плейлистов в базу
+# @router.post("/upload_playlists")
+# async def upload_playlists(file: UploadFile = File(...)):
+#     contents = await file.read()
+#     playlist_data = json.loads(contents)
+#
+#     async with SessionLocal() as session:
+#         try:
+#             for playlist_name, playlist_details in playlist_data.items():
+#                 playlist_exists = await session.execute(select(exists().where(
+#                     Playlist.id == playlist_name)))
+#                 if not playlist_exists.scalar():
+#                     images = playlist_details.get("images", [])
+#                     images_url = images[0]["url"] if images else None
+#
+#                     playlist = Playlist(
+#                         id=playlist_name,
+#                         collaborative=playlist_details["collaborative"],
+#                         description=playlist_details["description"],
+#                         external_urls_spotify=playlist_details["external_urls"]["spotify"],
+#                         images=images,
+#                         images_url=images_url,
+#                         href=playlist_details["href"],
+#                         name=playlist_details["name"],
+#                         owner_id=playlist_details["owner"]["id"],
+#                         owner_display_name=playlist_details["owner"]["display_name"],
+#                         owner_href=playlist_details["owner"]["href"],
+#                         owner_short=playlist_details["owner_short"],
+#                         primary_color=playlist_details["primary_color"],
+#                         public=playlist_details["public"],
+#                         snapshot_id=playlist_details["snapshot_id"],
+#                         tracks_total=playlist_details["tracks"]["total"],
+#                         type=playlist_details["type"],
+#                         uri=playlist_details["uri"],
+#                     )
+#                     session.add(playlist)
+#
+#             await session.commit()
+#
+#             return {"message": "Data uploaded successfully"}
+#         except Exception as e:
+#             await session.rollback()
+#             raise HTTPException(status_code=500, detail=str(e))
+#         finally:
+#             await session.close()
