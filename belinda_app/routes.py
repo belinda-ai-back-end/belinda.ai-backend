@@ -224,7 +224,7 @@ async def login_curator(request: CuratorLogin):
 
         await CuratorAuthorizationService.create_curator_session(session, curator.curator_id, access_token)
         return {"message": "Successful login", "access_token": access_token, "token_type": "bearer",
-                "curator_id": curator.musician_id}
+                "curator_id": curator.curator_id}
 
 
 @router.post("/logout/curator")
