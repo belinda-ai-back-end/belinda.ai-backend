@@ -1,22 +1,26 @@
 import json
-from datetime import datetime
+from uuid import UUID
+
+from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, Response, status
+from fastapi import Request, APIRouter, HTTPException, UploadFile, File, Depends, status
+
 from sqlalchemy import func, select, exists
 
 from belinda_app.settings import get_settings
-from belinda_app.services import update_deal_status, RoleEnum, get_current_musician, pwd_context, create_access_token
+from belinda_app.services import (update_deal_status, RoleEnum, create_access_token,
+                                  MusicianAuthorizationService, CuratorAuthorizationService)
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
-                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack, UserSession)
-from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest,
-                                 CreateCuratorRequest, CreateMusicianTrackRequest)
+                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
+from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest, MusicianLogin,
+                                 CreateCuratorRequest, CuratorLogin)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
+from belinda_app.middleware import JWTBearer
 
 settings = get_settings()
 
 router = APIRouter()
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 # Проверка статуса базы
@@ -35,7 +39,7 @@ async def healthcheck(request: Request):
 
 
 # Получение 100 рандомных плейлистов
-@router.get("/playlists")
+@router.get("/playlists", dependencies=[Depends(JWTBearer())])
 async def get_playlists():
     async with SessionLocal() as session:
         query = await session.execute(
@@ -47,7 +51,7 @@ async def get_playlists():
 
 
 # Выдача всех треков для musician
-@router.get("/get_tracks_for_musician/{musician_id}")
+@router.get("/get_tracks_for_musician/{musician_id}", dependencies=[Depends(JWTBearer())])
 async def get_tracks_for_musician(musician_id: str):
     async with SessionLocal() as session:
         try:
@@ -66,8 +70,7 @@ async def get_tracks_for_musician(musician_id: str):
 
 
 # Выдача всех сделок для curator
-
-@router.get("/get_deals_for_curator/{curator_id}")
+@router.get("/get_deals_for_curator/{curator_id}", dependencies=[Depends(JWTBearer())])
 async def get_deals_for_curator(curator_id: str):
     async with SessionLocal() as session:
         try:
@@ -87,7 +90,7 @@ async def get_deals_for_curator(curator_id: str):
 
 # Выдача всех сделок musician_track, которые учавствуют в ней
 
-@router.get("/get_deals_for_track/{musician_track_id}")
+@router.get("/get_deals_for_track/{musician_track_id}", dependencies=[Depends(JWTBearer())])
 async def get_deals_for_track(track_id: str):
     async with SessionLocal() as session:
         try:
@@ -106,12 +109,7 @@ async def get_deals_for_track(track_id: str):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/get_token")
-async def get_token(current_musician_token: dict = Depends(get_current_musician)):
-    return current_musician_token
-
-
-@router.post("/feedback")
+@router.post("/feedback", dependencies=[Depends(JWTBearer())])
 async def set_feedback(musician_id: str, playlist_id: str, rating: RatingEnum):
     async with SessionLocal() as session:
         stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
@@ -156,7 +154,107 @@ async def set_feedback(musician_id: str, playlist_id: str, rating: RatingEnum):
         )
 
 
-# Добавление кураторов в базу
+# Создание сделки
+@router.post("/create_deal", dependencies=[Depends(JWTBearer())])
+async def create_deal(deal_request: CreateDealRequest) -> dict:
+    async with SessionLocal() as session:
+        try:
+            deal = Deal(**deal_request.dict(), status=StatusKeyEnumForMusician.submit)
+            session.add(deal)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Deal created successfully"}
+
+
+@router.post("/register/musician")
+async def register_musician(request: CreateMusicianRequest):
+    async with SessionLocal() as session:
+        new_musician = await MusicianAuthorizationService.register_musician(session, request)
+
+        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+        access_token = create_access_token(str(new_musician.musician_id), expires_delta)
+
+        await MusicianAuthorizationService.create_musician_session(session, new_musician.musician_id, access_token)
+
+        return {"access_token": access_token, "token_type": "bearer", "musician": new_musician}
+
+
+@router.post("/login/musician")
+async def login_musician(request: MusicianLogin):
+    async with SessionLocal() as session:
+        musician = await MusicianAuthorizationService.login_musician(session, request)
+
+        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+        access_token = create_access_token(str(musician.musician_id), expires_delta)
+
+        await MusicianAuthorizationService.create_musician_session(session, musician.musician_id, access_token)
+        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout/musician")
+async def logout_musician(musician_id: UUID):
+    async with SessionLocal() as session:
+        await MusicianAuthorizationService.logout_musician(session, musician_id)
+
+    return {"message": "Logged out successfully"}
+
+
+@router.post("/register/curator")
+async def register_curator(request: CreateCuratorRequest):
+    async with SessionLocal() as session:
+        new_curator = await CuratorAuthorizationService.register_curator(session, request)
+
+        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+        access_token = create_access_token(str(new_curator.curator_id), expires_delta)
+
+        await CuratorAuthorizationService.create_curator_session(session, new_curator.curator_id, access_token)
+
+        return {"access_token": access_token, "token_type": "bearer", "musician": new_curator}
+
+
+@router.post("/login/curator")
+async def login_curator(request: CuratorLogin):
+    async with SessionLocal() as session:
+        curator = await CuratorAuthorizationService.login_curator(session, request)
+
+        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+        access_token = create_access_token(str(curator.curator_id), expires_delta)
+
+        await CuratorAuthorizationService.create_curator_session(session, curator.curator_id, access_token)
+        return {"message": "Successful login", "access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout/curator")
+async def logout_curator(curator_id: UUID):
+    async with SessionLocal() as session:
+        await CuratorAuthorizationService.logout_curator(session, curator_id)
+
+    return {"message": "Logged out successfully"}
+
+
+@router.put("/update_deal_status/curator/{deal_id}", dependencies=[Depends(JWTBearer())])
+async def update_curator_deal_status(
+        deal_id: str,
+        new_status: StatusKeyEnumForCurator,
+        session: SessionLocal = Depends(get_session)
+):
+    await update_deal_status(session, deal_id, RoleEnum.curator, new_status)
+    return {"message": "Deal status updated successfully for curator"}
+
+
+@router.put("/update_deal_status/musician/{deal_id}", dependencies=[Depends(JWTBearer())])
+async def update_musician_deal_status(
+        deal_id: str,
+        new_status: StatusKeyEnumForMusician,
+        session: SessionLocal = Depends(get_session)
+):
+    await update_deal_status(session, deal_id, RoleEnum.musician, new_status)
+    return {"message": "Deal status updated successfully for musician"}
+
+
+# Добавление кураторов в базу (не тыкать)
 @router.post("/upload_curators")
 async def upload_curators(file: UploadFile = File(...)):
     try:
@@ -197,7 +295,7 @@ async def upload_curators(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Failed to read JSON file")
 
 
-# Добавление плейлистов в базу
+# Добавление плейлистов в базу (не тыкать)
 @router.post("/upload_playlists")
 async def upload_playlists(file: UploadFile = File(...)):
     contents = await file.read()
@@ -242,129 +340,3 @@ async def upload_playlists(file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail=str(e))
         finally:
             await session.close()
-
-
-# Метод для создания сессии пользователя
-
-@router.post("/login")
-async def login(username: str, password: str, response: Response):
-    async with SessionLocal() as session:
-        musician = await session.execute(select(Musician).where(Musician.login == username))
-        musician = musician.scalar_one_or_none()
-        if musician and pwd_context.verify(password, musician.password):
-            access_token = create_access_token({"sub": musician.login})
-
-            user_session = UserSession(musician_id=musician.musician_id, access_token=access_token)
-            session.add(user_session)
-            await session.commit()
-
-            response.set_cookie(key="musician_id", value=str(musician.musician_id))
-            return {"message": "Login successful", "musician_id": musician.musician_id}
-        else:
-            raise HTTPException(status_code=401, detail="Incorrect username or password")
-
-
-# Метод для разлогинивания пользователя
-@router.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie(key="musician_id")
-    return {"message": "Logged out"}
-
-
-# Добавление музыкантов в базу
-@router.post("/create_musician")
-async def create_musician(musician_request: CreateMusicianRequest) -> dict:
-    async with SessionLocal() as session:
-        try:
-            hashed_password = pwd_context.hash(musician_request.password)
-            musician_request.password = hashed_password
-            musician_db = Musician(**musician_request.dict())
-            session.add(musician_db)
-            await session.commit()
-
-            return {"message": "Musician added successfully", "musician": musician_db}
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-
-
-# Добавление трека музыканта в базу
-@router.post("/create_musician_track")
-async def create_musician_track(
-        musician_track_request: CreateMusicianTrackRequest
-) -> dict:
-    musician_track_data = MusicianTrack(**musician_track_request.dict())
-
-    async with SessionLocal() as session:
-        try:
-            session.add(musician_track_data)
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-        return {"message": "Musician track added successfully"}
-
-
-# Добавление кураторов в базу
-@router.post("/create_curator")
-async def create_curator(
-        curator_request: CreateCuratorRequest,
-) -> dict:
-    curator_data = Curator(**curator_request.dict())
-
-    async with SessionLocal() as session:
-        try:
-            session.add(curator_data)
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            await session.close()
-        return {"message": "Curator data uploaded successfully"}
-
-
-# Создание сделки
-@router.post("/create_deal")
-async def create_deal(deal_request: CreateDealRequest) -> dict:
-    async with SessionLocal() as session:
-        try:
-            deal = Deal(**deal_request.dict(), status=StatusKeyEnumForMusician.submit)
-            session.add(deal)
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
-        return {"message": "Deal created successfully"}
-
-
-# @router.get("/get_password")
-# async def get_password(login: str):
-#     async with SessionLocal() as session:
-#         musician = await session.execute(select(Musician.password).where(Musician.login == login))
-#         hashed_password = musician.scalar_one_or_none()
-#
-#         if hashed_password is None:
-#             raise HTTPException(status_code=404, detail="User not found")
-#
-#         return {"password": hashed_password}
-
-
-@router.put("/update_deal_status/curator/{deal_id}")
-async def update_curator_deal_status(
-        deal_id: str,
-        new_status: StatusKeyEnumForCurator,
-        session: SessionLocal = Depends(get_session)
-):
-    await update_deal_status(session, deal_id, RoleEnum.curator, new_status)
-    return {"message": "Deal status updated successfully for curator"}
-
-
-@router.put("/update_deal_status/musician/{deal_id}")
-async def update_musician_deal_status(
-        deal_id: str,
-        new_status: StatusKeyEnumForMusician,
-        session: SessionLocal = Depends(get_session)
-):
-    await update_deal_status(session, deal_id, RoleEnum.musician, new_status)
-    return {"message": "Deal status updated successfully for musician"}

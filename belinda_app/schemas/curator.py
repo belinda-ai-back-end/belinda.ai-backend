@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 
 class CreateCuratorRequest(BaseModel):
+    login: Optional[str]
+    password: Optional[str]
     name: Optional[str]
     desc: Optional[str]
     facebook_link: Optional[str]
@@ -15,3 +17,8 @@ class CreateCuratorRequest(BaseModel):
     apple_music_link: Optional[str]
     mixcloud_link: Optional[str]
     twitch_link: Optional[str]
+
+
+class CuratorLogin(BaseModel):
+    login: str
+    password: str

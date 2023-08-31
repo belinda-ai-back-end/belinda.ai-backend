@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from .feedback import Feedback
     from .deals import Deal
     from .musician_track import MusicianTrack
-    from .sessions import UserSession
+    from .musician_session import MusicianSession
 
 
 class Musician(SQLModel, table=True):
@@ -24,4 +24,4 @@ class Musician(SQLModel, table=True):
     musician_track: Optional["MusicianTrack"] = Relationship(back_populates="musician")
     feedback: Optional[List["Feedback"]] = Relationship(back_populates="musician")
     deal: Optional[List["Deal"]] = Relationship(back_populates="musician")
-    user_session: Optional[List["UserSession"]] = Relationship(back_populates="musician")
+    user_session: Optional[List["MusicianSession"]] = Relationship(back_populates="musician")

@@ -2,6 +2,7 @@
 import logging
 
 from fastapi.logger import logger
+# from fastapi import Request
 # from belinda_app.models import Curator, Playlist, Track
 # from belinda_app.db.database import SessionLocal
 
@@ -12,6 +13,12 @@ def setup_logger():
     uvicorn_access_logger.handlers = gunicorn_error_logger.handlers
     logger.handlers = gunicorn_error_logger.handlers
 
+
+# def get_jwt_token(request: Request):
+#     jwt_token = request.headers.get("Authorization", None)
+#     if jwt_token is not None:
+#         return jwt_token.replace("Bearer ", "")
+#     return None
 
 # async def curator():
 #     with open('curators.json', 'r') as file:

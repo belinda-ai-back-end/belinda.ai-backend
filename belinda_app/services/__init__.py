@@ -1,2 +1,4 @@
 from .deal_service import update_deal_status, RoleEnum
-from .auth_service import authenticate_user, create_access_token, pwd_context, get_current_musician
+from .create_access_token_service import create_access_token
+from .musician_authorization_service import MusicianAuthorizationService
+from .curator_authorization_service import CuratorAuthorizationService
