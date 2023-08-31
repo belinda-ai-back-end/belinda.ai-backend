@@ -17,3 +17,8 @@ class CreateCuratorRequest(BaseModel):
     apple_music_link: Optional[str]
     mixcloud_link: Optional[str]
     twitch_link: Optional[str]
+
+
+class CuratorLogin(BaseModel):
+    login: str
+    password: str

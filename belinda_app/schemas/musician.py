@@ -12,3 +12,8 @@ class CreateMusicianRequest(BaseModel):
     artist_name: Optional[str]
     artist_link: Optional[str]
     origin: Optional[str]
+
+
+class MusicianLogin(BaseModel):
+    login: str
+    password: str

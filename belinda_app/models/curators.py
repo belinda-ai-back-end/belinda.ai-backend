@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from .deals import Deal
-    from .sessions import UserSession
+    from .curator_session import CuratorSession
 
 
 class Curator(SQLModel, table=True):
@@ -25,4 +25,4 @@ class Curator(SQLModel, table=True):
     twitch_link: str | None
 
     deal: Optional[List["Deal"]] = Relationship(back_populates="curator")
-    user_session: Optional[List["UserSession"]] = Relationship(back_populates="curator")
+    user_session: Optional[List["CuratorSession"]] = Relationship(back_populates="curator")
