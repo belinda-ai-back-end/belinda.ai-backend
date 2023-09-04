@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     SESSION_SECRET_KEY: str = Field(default=str(uuid.uuid4()))
     CORS_ORIGINS: str = "*"
 
-    ACCESS_TOKEN_EXPIRE_HOURS: int = 24
+    ACCESS_TOKEN_EXPIRE_HOURS = 24
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: SecretStr
