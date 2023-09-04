@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, Depends, status
+from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import func, select
@@ -52,7 +52,7 @@ async def get_playlists():
 
 # Выдача всех треков для musician
 @router.get("/get_tracks_for_musician/{musician_id}", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
-async def get_tracks_for_musician(musician_id: str):
+async def get_tracks_for_musician(musician_id: UUID):
     async with SessionLocal() as session:
         try:
             musician_result = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
@@ -71,7 +71,7 @@ async def get_tracks_for_musician(musician_id: str):
 
 # Выдача всех сделок для curator
 @router.get("/get_deals_for_curator/{curator_id}", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
-async def get_deals_for_curator(curator_id: str):
+async def get_deals_for_curator(curator_id: UUID):
     async with SessionLocal() as session:
         try:
             curator_result = await session.execute(select(Curator).where(Curator.curator_id == curator_id))
@@ -91,7 +91,7 @@ async def get_deals_for_curator(curator_id: str):
 # Выдача всех сделок musician_track, которые учавствуют в ней
 
 @router.get("/get_deals_for_track/{musician_track_id}", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
-async def get_deals_for_track(track_id: str):
+async def get_deals_for_track(track_id: UUID):
     async with SessionLocal() as session:
         try:
             musician_track_result = await session.execute(
@@ -110,7 +110,7 @@ async def get_deals_for_track(track_id: str):
 
 
 @router.post("/feedback", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
-async def set_feedback(musician_id: str, playlist_id: str, rating: RatingEnum):
+async def set_feedback(musician_id: UUID, playlist_id: UUID, rating: RatingEnum):
     async with SessionLocal() as session:
         stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
         user = stmt_user.scalar_one_or_none()
@@ -213,11 +213,20 @@ async def login_musician(request: MusicianLogin):
 
 
 @router.post("/logout/musician")
-async def logout_musician(musician_id: UUID):
+async def logout_musician(musician_id: UUID, access_token: str = Cookie(None)):
     async with SessionLocal() as session:
         await MusicianAuthorizationService.logout_musician(session, musician_id)
 
-    return {"message": "Logged out successfully"}
+    response = JSONResponse(content={"message": "Logged out successfully"})
+
+    response.set_cookie(
+        key="access_token",
+        value="",
+        httponly=True,
+        max_age=-1,
+    )
+
+    return response
 
 
 @router.post("/register/curator")
@@ -265,30 +274,39 @@ async def login_curator(request: CuratorLogin):
 
 
 @router.post("/logout/curator")
-async def logout_curator(curator_id: UUID):
+async def logout_curator(curator_id: UUID, access_token: str = Cookie(None)):
     async with SessionLocal() as session:
         await CuratorAuthorizationService.logout_curator(session, curator_id)
 
-    return {"message": "Logged out successfully"}
+    response = JSONResponse(content={"message": "Logged out successfully"})
+
+    response.set_cookie(
+        key="access_token",
+        value="",
+        httponly=True,
+        max_age=-1,
+    )
+
+    return response
 
 
 @router.put("/update_deal_status/curator/{deal_id}", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
 async def update_curator_deal_status(
-        deal_id: str,
+        deal_id: UUID,
         new_status: StatusKeyEnumForCurator,
         session: SessionLocal = Depends(get_session)
 ):
-    await update_deal_status(session, deal_id, RoleEnum.curator, new_status)
+    await update_deal_status(session, str(deal_id), RoleEnum.curator, new_status)
     return {"message": "Deal status updated successfully for curator"}
 
 
 @router.put("/update_deal_status/musician/{deal_id}", dependencies=[Depends(JWTBearer()), Depends(check_cookie)])
 async def update_musician_deal_status(
-        deal_id: str,
+        deal_id: UUID,
         new_status: StatusKeyEnumForMusician,
         session: SessionLocal = Depends(get_session)
 ):
-    await update_deal_status(session, deal_id, RoleEnum.musician, new_status)
+    await update_deal_status(session, str(deal_id), RoleEnum.musician, new_status)
     return {"message": "Deal status updated successfully for musician"}
 
 # Добавление кураторов в базу (не тыкать)
