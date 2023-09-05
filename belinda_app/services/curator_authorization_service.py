@@ -1,4 +1,3 @@
-import bcrypt
 from uuid import UUID
 from datetime import datetime, timedelta
 
@@ -26,10 +25,8 @@ class CuratorAuthorizationService:
                 detail="This login is already registered.",
             )
 
-        hashed_password = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
-
-        curator_data = request.dict(exclude={"password"})
-        new_curator = Curator(**curator_data, password=hashed_password)
+        curator_data = request.dict()
+        new_curator = Curator(**curator_data)
 
         session.add(new_curator)
 
@@ -49,8 +46,7 @@ class CuratorAuthorizationService:
         curator = await session.execute(select(Curator).where(Curator.login == request.login))
         curator = curator.scalar()
 
-        if curator is None or not bcrypt.checkpw(request.password.encode("utf-8"),
-                                                 curator.password.encode("utf-8")):
+        if curator is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect login or password",

@@ -1,4 +1,3 @@
-import bcrypt
 from uuid import UUID
 from datetime import datetime, timedelta
 
@@ -26,10 +25,8 @@ class MusicianAuthorizationService:
                 detail="This login is already registered.",
             )
 
-        hashed_password = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
-
-        musician_data = request.dict(exclude={"password"})
-        new_musician = Musician(**musician_data, password=hashed_password)
+        musician_data = request.dict()
+        new_musician = Musician(**musician_data)
 
         session.add(new_musician)
 
@@ -49,8 +46,7 @@ class MusicianAuthorizationService:
         musician = await session.execute(select(Musician).where(Musician.login == request.login))
         musician = musician.scalar()
 
-        if musician is None or not bcrypt.checkpw(request.password.encode("utf-8"),
-                                                  musician.password.encode("utf-8")):
+        if musician is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect login or password",

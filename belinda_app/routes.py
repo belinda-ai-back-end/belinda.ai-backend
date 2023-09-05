@@ -180,7 +180,6 @@ async def register_musician(request: CreateMusicianRequest):
         await MusicianAuthorizationService.create_musician_session(session, new_musician.musician_id, access_token)
         response = JSONResponse(content={
             "message": "Successful register",
-            "musician": new_musician
         })
 
         response.set_cookie(
@@ -241,7 +240,6 @@ async def register_curator(request: CreateCuratorRequest):
         await CuratorAuthorizationService.create_curator_session(session, new_curator.curator_id, access_token)
         response = JSONResponse(content={
             "message": "Successful register",
-            "curator": new_curator
         })
 
         response.set_cookie(
