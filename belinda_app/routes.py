@@ -351,7 +351,7 @@ async def upload_curators(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Failed to read JSON file")
 
 
-# Добавление плейлистов в базу
+# Добавление плейлистов в базу (не тыкать)
 @router.post("/upload_playlists")
 async def upload_playlists(file: UploadFile = File(...)):
     contents = await file.read()
@@ -364,7 +364,7 @@ async def upload_playlists(file: UploadFile = File(...)):
                     Playlist.id == playlist_name)))
                 if not playlist_exists.scalar():
                     images = playlist_details.get("images", [])
-                    imagesUrl = images[0]["url"] if images else None
+                    images_url = images[0]["url"] if images else None
 
                     playlist = Playlist(
                         id=playlist_name,
@@ -372,16 +372,16 @@ async def upload_playlists(file: UploadFile = File(...)):
                         description=playlist_details["description"],
                         externalUrlsSpotify=playlist_details["external_urls"]["spotify"],
                         images=images,
-                        imagesUrl=imagesUrl,
+                        imagesUrl=images_url,
                         href=playlist_details["href"],
                         name=playlist_details["name"],
                         ownerId=playlist_details["owner"]["id"],
                         ownerDisplayName=playlist_details["owner"]["display_name"],
                         ownerHref=playlist_details["owner"]["href"],
-                        ownerShort=playlist_details["ownerShort"],
-                        primaryColor=playlist_details["primaryColor"],
+                        ownerShort=playlist_details["owner_short"],
+                        primaryColor=playlist_details["primary_color"],
                         public=playlist_details["public"],
-                        snapshotId=playlist_details["snapshotId"],
+                        snapshotId=playlist_details["snapshot_id"],
                         tracksTotal=playlist_details["tracks"]["total"],
                         type=playlist_details["type"],
                         uri=playlist_details["uri"],
