@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from fastapi import HTTPException, status
 
 from belinda_app.models import Curator, CuratorSession
-from belinda_app.schemas import CreateCuratorRequest, CuratorLogin
+from belinda_app.schemas import CreateCuratorRequest, CuratorEmail
 from belinda_app.settings import get_settings
 
 
@@ -16,13 +16,13 @@ settings = get_settings()
 class CuratorAuthorizationService:
     @classmethod
     async def register_curator(cls, session: AsyncSession, request: CreateCuratorRequest):
-        existing_curator = await session.execute(select(Curator).where(Curator.login == request.login))
+        existing_curator = await session.execute(select(Curator).where(Curator.email == request.email))
         existing_curator = existing_curator.scalar()
 
         if existing_curator:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This login is already registered.",
+                detail="This email is already registered.",
             )
 
         curator_data = request.dict()
@@ -36,20 +36,20 @@ class CuratorAuthorizationService:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to save curator information.",
+                detail=f"Failed to save curator information. : {e}",
             )
 
         return new_curator
 
     @classmethod
-    async def login_curator(cls, session: AsyncSession, request: CuratorLogin):
-        curator = await session.execute(select(Curator).where(Curator.login == request.login))
+    async def login_curator(cls, session: AsyncSession, request: CuratorEmail):
+        curator = await session.execute(select(Curator).where(Curator.email == request.email))
         curator = curator.scalar()
 
         if curator is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect login or password",
+                detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

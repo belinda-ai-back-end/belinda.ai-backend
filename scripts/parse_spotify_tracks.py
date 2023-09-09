@@ -15,10 +15,10 @@ def form_nice_info(track):
     res = {}
     try:
         res["id"] = track["track"]["id"]
-        res["duration_ms"] = track["track"]["duration_ms"]
+        res["durationMs"] = track["track"]["durationMs"]
         res["name"] = track["track"]["name"]
         res["popularity"] = track["track"]["popularity"]
-        res["preview_url"] = track["track"]["preview_url"]
+        res["previewUrl"] = track["track"]["previewUrl"]
         res["album"] = track["track"]["album"]
         res["album"].pop("available_markets", None)
     except (KeyError, TypeError):

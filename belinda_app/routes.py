@@ -13,8 +13,8 @@ from belinda_app.services import (update_deal_status, RoleEnum, create_access_to
                                   MusicianAuthorizationService, CuratorAuthorizationService)
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
                                 StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
-from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest, MusicianLogin,
-                                 CreateCuratorRequest, CuratorLogin)
+from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest, MusicianEmail,
+                                 CreateCuratorRequest, CuratorEmail)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
 
 settings = get_settings()
@@ -191,7 +191,7 @@ async def register_musician(request: CreateMusicianRequest):
 
 
 @router.post("/login/musician")
-async def login_musician(request: MusicianLogin):
+async def login_musician(request: MusicianEmail):
     async with SessionLocal() as session:
         musician = await MusicianAuthorizationService.login_musician(session, request)
 
@@ -200,7 +200,7 @@ async def login_musician(request: MusicianLogin):
 
         await MusicianAuthorizationService.create_musician_session(session, musician.musician_id, access_token)
         response = JSONResponse(content={
-            "message": "Successful login",
+            "message": "Successful email",
             "musician_id": str(musician.musician_id)
         })
 
@@ -251,7 +251,7 @@ async def register_curator(request: CreateCuratorRequest):
 
 
 @router.post("/login/curator")
-async def login_curator(request: CuratorLogin):
+async def login_curator(request: CuratorEmail):
     async with SessionLocal() as session:
         curator = await CuratorAuthorizationService.login_curator(session, request)
 
@@ -260,7 +260,7 @@ async def login_curator(request: CuratorLogin):
 
         await CuratorAuthorizationService.create_curator_session(session, curator.curator_id, access_token)
         response = JSONResponse(content={
-            "message": "Successful login",
+            "message": "Successful email",
             "musician_id": str(curator.curator_id)
         })
 
@@ -324,15 +324,15 @@ async def update_musician_deal_status(
 #                         curator = Curator(
 #                             name=curator_details["name"],
 #                             desc=curator_details["desc"],
-#                             facebook_link=curator_details["facebook_link"],
-#                             spotify_link=curator_details["spotify_link"],
-#                             instagram_link=curator_details["instagram_link"],
-#                             tiktok_link=curator_details["tiktok_link"],
-#                             twitter_link=curator_details["twitter_link"],
-#                             youtube_link=curator_details["youtube_link"],
-#                             apple_music_link=curator_details["apple_music_link"],
-#                             mixcloud_link=curator_details["mixcloud_link"],
-#                             twitch_link=curator_details["twitch_link"],
+#                             facebookLink=curator_details["facebookLink"],
+#                             spotifyLink=curator_details["spotifyLink"],
+#                             instagramLink=curator_details["instagramLink"],
+#                             tiktokLink=curator_details["tiktokLink"],
+#                             twitterLink=curator_details["twitterLink"],
+#                             youtubeLink=curator_details["youtubeLink"],
+#                             appleMusicLink=curator_details["appleMusicLink"],
+#                             mixcloudLink=curator_details["mixcloudLink"],
+#                             twitchLink=curator_details["twitchLink"],
 #                         )
 #                         session.add(curator)
 #
@@ -362,25 +362,25 @@ async def update_musician_deal_status(
 #                     Playlist.id == playlist_name)))
 #                 if not playlist_exists.scalar():
 #                     images = playlist_details.get("images", [])
-#                     images_url = images[0]["url"] if images else None
+#                     imagesUrl = images[0]["url"] if images else None
 #
 #                     playlist = Playlist(
 #                         id=playlist_name,
 #                         collaborative=playlist_details["collaborative"],
 #                         description=playlist_details["description"],
-#                         external_urls_spotify=playlist_details["external_urls"]["spotify"],
+#                         externalUrlsSpotify=playlist_details["external_urls"]["spotify"],
 #                         images=images,
-#                         images_url=images_url,
+#                         imagesUrl=imagesUrl,
 #                         href=playlist_details["href"],
 #                         name=playlist_details["name"],
-#                         owner_id=playlist_details["owner"]["id"],
-#                         owner_display_name=playlist_details["owner"]["display_name"],
-#                         owner_href=playlist_details["owner"]["href"],
-#                         owner_short=playlist_details["owner_short"],
-#                         primary_color=playlist_details["primary_color"],
+#                         ownerId=playlist_details["owner"]["id"],
+#                         ownerDisplayName=playlist_details["owner"]["display_name"],
+#                         ownerHref=playlist_details["owner"]["href"],
+#                         ownerShort=playlist_details["ownerShort"],
+#                         primaryColor=playlist_details["primaryColor"],
 #                         public=playlist_details["public"],
-#                         snapshot_id=playlist_details["snapshot_id"],
-#                         tracks_total=playlist_details["tracks"]["total"],
+#                         snapshotId=playlist_details["snapshotId"],
+#                         tracksTotal=playlist_details["tracks"]["total"],
 #                         type=playlist_details["type"],
 #                         uri=playlist_details["uri"],
 #                     )

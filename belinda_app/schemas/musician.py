@@ -5,15 +5,14 @@ from pydantic import BaseModel
 
 class CreateMusicianRequest(BaseModel):
     name: Optional[str]
-    email: Optional[str]
     phone: Optional[str]
-    login: Optional[str]
+    email: Optional[str]
     password: Optional[str]
-    artist_name: Optional[str]
-    artist_link: Optional[str]
+    ArtistName: Optional[str]
+    # ArtistLink: Optional[str]
     origin: Optional[str]
 
 
-class MusicianLogin(BaseModel):
-    login: str
+class MusicianEmail(BaseModel):
+    email: str
     password: str

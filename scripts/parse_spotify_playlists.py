@@ -24,9 +24,9 @@ with open("processed.txt", "r", encoding="utf-8") as f:
 start_time = time.time()
 
 for curator_name, curator in tqdm(curators.items(), total=len(curators)):
-    if curator['spotify_link'] is None:
+    if curator['spotifyLink'] is None:
         continue
-    username = curator['spotify_link'].split('/')[-1]
+    username = curator['spotifyLink'].split('/')[-1]
 
     try:
         playlists = sp.user_playlists(username)
