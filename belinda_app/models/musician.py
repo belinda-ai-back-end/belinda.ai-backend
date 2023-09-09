@@ -16,8 +16,8 @@ class Musician(SQLModel, table=True):
     phone: str | None
     email: str | None
     password: str | None
-    ArtistName: str | None
-    # ArtistLink: str | None
+    artistName: str | None
+    # artistLink: str | None
     origin: str | None
 
     musician_track: Optional["MusicianTrack"] = Relationship(back_populates="musician")

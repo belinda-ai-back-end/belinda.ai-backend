@@ -8,8 +8,8 @@ class CreateMusicianRequest(BaseModel):
     phone: Optional[str]
     email: Optional[str]
     password: Optional[str]
-    ArtistName: Optional[str]
-    # ArtistLink: Optional[str]
+    artistName: Optional[str]
+    # artistLink: Optional[str]
     origin: Optional[str]
 
 

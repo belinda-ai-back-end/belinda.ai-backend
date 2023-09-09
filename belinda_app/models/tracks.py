@@ -15,6 +15,6 @@ class Track(SQLModel, table=True):
     albumName: str | None
     albumTotalTracks: int | None
     artistId: str | None
-    ArtistName: str | None
+    artistName: str | None
     artistHref: str | None
     playlistId: str | None

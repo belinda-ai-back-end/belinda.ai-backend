@@ -326,15 +326,10 @@ async def upload_curators(file: UploadFile = File(...)):
                         curator = Curator(
                             name=curator_details["name"],
                             desc=curator_details["desc"],
-                            facebookLink=curator_details["facebookLink"],
-                            spotifyLink=curator_details["spotifyLink"],
-                            instagramLink=curator_details["instagramLink"],
-                            tiktokLink=curator_details["tiktokLink"],
-                            twitterLink=curator_details["twitterLink"],
-                            youtubeLink=curator_details["youtubeLink"],
-                            appleMusicLink=curator_details["appleMusicLink"],
-                            mixcloudLink=curator_details["mixcloudLink"],
-                            twitchLink=curator_details["twitchLink"],
+                            email=curator_details.get("email"),
+                            password=curator_details.get("password"),
+                            socialLinks=curator_details.get("socialLinks"),
+                            playlists=None
                         )
                         session.add(curator)
 
