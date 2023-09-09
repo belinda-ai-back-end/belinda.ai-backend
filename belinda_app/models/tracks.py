@@ -6,15 +6,15 @@ from sqlmodel import Field, SQLModel
 class Track(SQLModel, table=True):
     track_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     id: str | None
-    duration_ms: int | None
+    durationMs: int | None
     name: str | None
     popularity: int | None
-    preview_url: str | None
-    album_id: str | None
-    album_href: str | None
-    album_name: str | None
-    album_total_tracks: int | None
-    artist_id: str | None
-    artist_name: str | None
-    artist_href: str | None
-    playlist_id: str | None
+    previewUrl: str | None
+    albumId: str | None
+    albumHref: str | None
+    albumName: str | None
+    albumTotalTracks: int | None
+    artistId: str | None
+    ArtistName: str | None
+    artistHref: str | None
+    playlistId: str | None

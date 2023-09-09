@@ -11,18 +11,18 @@ class Playlist(SQLModel, table=True):
     id: str = Field(default=None, primary_key=True)
     collaborative: bool | None
     description: str | None
-    external_urls_spotify: str | None
+    externalUrlsSpotify: str | None
     href: str | None
-    images_url: str | None
+    imagesUrl: str | None
     name: str | None
-    owner_id: str | None
-    owner_display_name: str | None
-    owner_href: str | None
-    owner_short: str | None
-    primary_color: str | None
+    ownerId: str | None
+    ownerDisplayName: str | None
+    ownerHref: str | None
+    ownerShort: str | None
+    primaryColor: str | None
     public: bool | None
-    snapshot_id: str | None
-    tracks_total: int
+    snapshotId: str | None
+    tracksTotal: int
     type: str | None
     uri: str | None
 

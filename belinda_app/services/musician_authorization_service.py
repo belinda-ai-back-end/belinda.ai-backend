@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from fastapi import HTTPException, status
 
 from belinda_app.models import Musician, MusicianSession
-from belinda_app.schemas import CreateMusicianRequest, MusicianLogin
+from belinda_app.schemas import CreateMusicianRequest, MusicianEmail
 from belinda_app.settings import get_settings
 
 
@@ -16,13 +16,13 @@ settings = get_settings()
 class MusicianAuthorizationService:
     @classmethod
     async def register_musician(cls, session: AsyncSession, request: CreateMusicianRequest):
-        existing_musician = await session.execute(select(Musician).where(Musician.login == request.login))
+        existing_musician = await session.execute(select(Musician).where(Musician.email == request.email))
         existing_musician = existing_musician.scalar()
 
         if existing_musician:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This login is already registered.",
+                detail="This email is already registered.",
             )
 
         musician_data = request.dict()
@@ -42,14 +42,14 @@ class MusicianAuthorizationService:
         return new_musician
 
     @classmethod
-    async def login_musician(cls, session: AsyncSession, request: MusicianLogin):
-        musician = await session.execute(select(Musician).where(Musician.login == request.login))
+    async def login_musician(cls, session: AsyncSession, request: MusicianEmail):
+        musician = await session.execute(select(Musician).where(Musician.email == request.email))
         musician = musician.scalar()
 
         if musician is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect login or password",
+                detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

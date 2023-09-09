@@ -29,15 +29,15 @@ def setup_logger():
 #             curator = Curator(
 #                 name=curator_details["name"],
 #                 desc=curator_details["desc"],
-#                 facebook_link=curator_details["facebook_link"],
-#                 spotify_link=curator_details["spotify_link"],
-#                 instagram_link=curator_details["instagram_link"],
-#                 tiktok_link=curator_details["tiktok_link"],
-#                 twitter_link=curator_details["twitter_link"],
-#                 youtube_link=curator_details["youtube_link"],
-#                 apple_music_link=curator_details["apple_music_link"],
-#                 mixcloud_link=curator_details["mixcloud_link"],
-#                 twitch_link=curator_details["twitch_link"],
+#                 facebookLink=curator_details["facebookLink"],
+#                 spotifyLink=curator_details["spotifyLink"],
+#                 instagramLink=curator_details["instagramLink"],
+#                 tiktokLink=curator_details["tiktokLink"],
+#                 twitterLink=curator_details["twitterLink"],
+#                 youtubeLink=curator_details["youtubeLink"],
+#                 appleMusicLink=curator_details["appleMusicLink"],
+#                 mixcloudLink=curator_details["mixcloudLink"],
+#                 twitchLink=curator_details["twitchLink"],
 #             )
 #             session.add(curator)
 #
@@ -52,25 +52,25 @@ def setup_logger():
 #     async with SessionLocal() as session:
 #         for playlist_name, playlist_details in playlist_data.items():
 #             images = playlist_details.get("images", [])
-#             images_url = images[0]["url"] if images else None
+#             imagesUrl = images[0]["url"] if images else None
 #
 #             playlist = Playlist(
 #                 id=playlist_name,
 #                 collaborative=playlist_details["collaborative"],
 #                 description=playlist_details["description"],
-#                 external_urls_spotify=playlist_details["external_urls"]["spotify"],
+#                 externalUrlsSpotify=playlist_details["external_urls"]["spotify"],
 #                 images=images,
-#                 images_url=images_url,
+#                 imagesUrl=imagesUrl,
 #                 href=playlist_details["href"],
 #                 name=playlist_details["name"],
-#                 owner_id=playlist_details["owner"]["id"],
-#                 owner_display_name=playlist_details["owner"]["display_name"],
-#                 owner_href=playlist_details["owner"]["href"],
-#                 owner_short=playlist_details["owner_short"],
-#                 primary_color=playlist_details["primary_color"],
+#                 ownerId=playlist_details["owner"]["id"],
+#                 ownerDisplayName=playlist_details["owner"]["display_name"],
+#                 ownerHref=playlist_details["owner"]["href"],
+#                 ownerShort=playlist_details["ownerShort"],
+#                 primaryColor=playlist_details["primaryColor"],
 #                 public=playlist_details["public"],
-#                 snapshot_id=playlist_details["snapshot_id"],
-#                 tracks_total=playlist_details["tracks"]["total"],
+#                 snapshotId=playlist_details["snapshotId"],
+#                 tracksTotal=playlist_details["tracks"]["total"],
 #                 type=playlist_details["type"],
 #                 uri=playlist_details["uri"],
 #             )
@@ -107,32 +107,32 @@ def setup_logger():
 #         track_data_list = json.loads(fixed_result)
 #
 #         for track_data in track_data_list:
-#             album_total_tracks = track_data["album"].get(
+#             albumTotalTracks = track_data["album"].get(
 #                 "total_tracks")
 #
 #             artists = track_data["album"].get("artists", [])
 #             if artists:
-#                 artist_id = artists[0].get("id")
-#                 artist_name = artists[0].get("name")
-#                 artist_href = artists[0].get("href")
+#                 artistId = artists[0].get("id")
+#                 ArtistName = artists[0].get("name")
+#                 artistHref = artists[0].get("href")
 #             else:
-#                 artist_id = None
-#                 artist_name = None
-#                 artist_href = None
+#                 artistId = None
+#                 ArtistName = None
+#                 artistHref = None
 #
 #             track = Track(
 #                 id=track_data.get("id"),
-#                 duration_ms=track_data.get("duration_ms"),
+#                 durationMs=track_data.get("durationMs"),
 #                 name=track_data.get("name"),
 #                 popularity=track_data.get("popularity"),
-#                 preview_url=track_data.get("preview_url"),
-#                 album_id=track_data["album"].get("id"),
-#                 album_href=track_data["album"].get("href"),
-#                 album_name=track_data["album"].get("name"),
-#                 album_total_tracks=album_total_tracks,
-#                 artist_id=artist_id,
-#                 artist_name=artist_name,
-#                 artist_href=artist_href,
+#                 previewUrl=track_data.get("previewUrl"),
+#                 albumId=track_data["album"].get("id"),
+#                 albumHref=track_data["album"].get("href"),
+#                 albumName=track_data["album"].get("name"),
+#                 albumTotalTracks=albumTotalTracks,
+#                 artistId=artistId,
+#                 ArtistName=ArtistName,
+#                 artistHref=artistHref,
 #                 playlist_id=track_data.get("playlists", [None])[0],
 #             )
 #             session.add(track)

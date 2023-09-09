@@ -47,12 +47,12 @@ print("Got accessToken:", access_token)
 start_time = time.time()
 
 
-def fetch_artist_info(artist_id, access_token):
+def fetch_artist_info(artistId, access_token):
     headers = {
         'Authorization': f"Bearer {access_token}",
         'Content-Type': 'application/json',
     }
-    url = f'https://api.spotify.com/v1/artists/{artist_id}'
+    url = f'https://api.spotify.com/v1/artists/{artistId}'
     try:
         print(f"Sending request to: {url}")
         response = requests.get(url, headers=headers)
@@ -77,8 +77,8 @@ with open('recommendations.json', 'r') as rec_file:
 artists_list = []
 
 for recommendation in recommendations_data:
-    artist_id = recommendation['artists'][0]['id']
-    artist_info = fetch_artist_info(artist_id, access_token)
+    artistId = recommendation['artists'][0]['id']
+    artist_info = fetch_artist_info(artistId, access_token)
 
     if artist_info is not None:
         artist_data = {

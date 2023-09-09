@@ -47,8 +47,8 @@ for x in range(5):  # Reduced the loop count for testing
     for track in tracks:
         artists = track['artists']
         for artist in artists:
-            artist_id = artist['id']
-            artist_info_response = session.get(f"https://api.spotify.com/v1/artists/{artist_id}", headers={
+            artistId = artist['id']
+            artist_info_response = session.get(f"https://api.spotify.com/v1/artists/{artistId}", headers={
                 'Authorization': f"Bearer {access_token}"
             })
             artist_info = artist_info_response.json()

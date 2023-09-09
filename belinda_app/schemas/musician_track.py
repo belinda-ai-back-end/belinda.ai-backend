@@ -1,15 +1,17 @@
 from pydantic import BaseModel
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
+
+from belinda_app.models import GenreEnum
 
 
 class CreateMusicianTrackRequest(BaseModel):
     track_name: Optional[str]
-    genre: Optional[str]
-    track_lyric_language: Optional[str]
-    song_lyric: Optional[str]
+    genre: Optional[List[GenreEnum]]
+    trackLyricLanguage: Optional[str]
+    songLyrics: Optional[str]
     track: str  # File datatype
-    track_link: Optional[str]
-    track_overview: Optional[str]
-    similar_artist: Optional[str]
+    trackLink: Optional[str]
+    trackOverview: Optional[str]
+    similarArtist: Optional[str]
     musician_id: Optional[UUID]

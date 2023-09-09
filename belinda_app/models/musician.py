@@ -13,12 +13,11 @@ if TYPE_CHECKING:
 class Musician(SQLModel, table=True):
     musician_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     name: str | None
-    email: str | None
     phone: str | None
-    login: str | None
+    email: str | None
     password: str | None
-    artist_name: str | None
-    artist_link: str | None
+    ArtistName: str | None
+    # ArtistLink: str | None
     origin: str | None
 
     musician_track: Optional["MusicianTrack"] = Relationship(back_populates="musician")
