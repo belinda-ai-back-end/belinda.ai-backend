@@ -8,6 +8,7 @@ from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, 
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import func, select, exists
+from sqlalchemy.exc import IntegrityError
 
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, create_access_token, check_cookie,
@@ -323,12 +324,17 @@ async def upload_curators(file: UploadFile = File(...)):
                     curator_exists = await session.execute(select(exists().where(
                         Curator.name == curator_name)))
                     if not curator_exists.scalar():
+                        social_links = []
+                        social_links_data = curator_details.get("socialLinks", {})
+                        for platform, link in social_links_data.items():
+                            social_links.append({"name": platform, "link": link})
+
                         curator = Curator(
                             name=curator_details["name"],
                             desc=curator_details["desc"],
                             email=curator_details.get("email"),
                             password=curator_details.get("password"),
-                            socialLinks=curator_details.get("socialLinks"),
+                            socialLinks=social_links,
                             playlists=None
                         )
                         session.add(curator)
@@ -336,6 +342,9 @@ async def upload_curators(file: UploadFile = File(...)):
                 await session.commit()
 
                 return {"message": "Data uploaded successfully"}
+            except IntegrityError:
+                await session.rollback()
+                raise HTTPException(status_code=400, detail="Curator with the same name already exists")
             except Exception as e:
                 await session.rollback()
                 raise HTTPException(status_code=500, detail=str(e))

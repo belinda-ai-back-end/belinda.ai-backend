@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from belinda_app.routes import router
 from belinda_app.db.database import init_db
 from belinda_app.settings import get_settings
-from belinda_app.utils import setup_logger   # track, playlist, curator
+from belinda_app.utils import setup_logger, track   # track, playlist, curator
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,7 @@ app = FastAPI(
     title="Belinda.ai",
     description="Helping musicians discover the best potential partner for expansion of the audience using AI",
     version="1.0.0",
+    docs_url="/docs"
 )
 settings = get_settings()
 
@@ -25,7 +26,7 @@ async def on_startup():
     app.include_router(router)
     setup_logger()
     logger.error(settings)
-    # await track()
+    await track()
     # await playlist()
     # await curator()
 
