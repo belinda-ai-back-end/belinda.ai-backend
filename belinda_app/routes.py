@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, UploadFile, File
+from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import func, select, exists
@@ -22,8 +22,6 @@ from belinda_app.db.database import SessionLocal, check_database_health, get_ses
 settings = get_settings()
 
 router = APIRouter()
-
-# открыть пароли при регистрации
 
 
 # Проверка статуса базы
@@ -172,9 +170,24 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
 
 
 @router.post("/register/musician")
-async def register_musician(request: CreateMusicianRequest):
+async def register_musician(
+    name: str = Form(None),
+    phone: str = Form(None),
+    email: str = Form(None),
+    password: str = Form(None),
+    artistName: str = Form(None),
+    origin: str = Form(None),
+):
+    musician_request = CreateMusicianRequest(
+        name=name,
+        phone=phone,
+        email=email,
+        password=password,
+        artistName=artistName,
+        origin=origin,
+    )
     async with SessionLocal() as session:
-        new_musician = await MusicianAuthorizationService.register_musician(session, request)
+        new_musician = await MusicianAuthorizationService.register_musician(session, musician_request)
 
         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(str(new_musician.musician_id), expires_delta)
@@ -250,6 +263,43 @@ async def register_curator(request: CreateCuratorRequest):
             httponly=True,
         )
         return response
+
+
+# @router.post("/register/curator", response_model=CreateCuratorRequest)
+# async def register_curator(
+#     email: str = Form(...),
+#     password: str = Form(...),
+#     name: str = Form(...),
+#     desc: str = Form(None),
+#     socialLinks: List[SocialLink] = Form(None),
+#     playlists: List[SocialLink] = Form(None)
+# ):
+#     curator_request = CreateCuratorRequest(
+#         email=email,
+#         password=password,
+#         name=name,
+#         desc=desc,
+#         socialLinks=socialLinks,
+#         playlists=playlists
+#     )
+#
+#     async with SessionLocal() as session:
+#         new_curator = await CuratorAuthorizationService.register_curator(session, curator_request)
+#
+#         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+#         access_token = create_access_token(str(new_curator.curator_id), expires_delta)
+#
+#         await CuratorAuthorizationService.create_curator_session(session, new_curator.curator_id, access_token)
+#         response = JSONResponse(content={
+#             "message": "Successful register",
+#         })
+#
+#         response.set_cookie(
+#             key="access_token",
+#             value=access_token,
+#             httponly=True,
+#         )
+#         return response
 
 
 @router.post("/login/curator")

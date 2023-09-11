@@ -9,7 +9,6 @@ from belinda_app.models import Musician, MusicianSession
 from belinda_app.schemas import CreateMusicianRequest, MusicianEmail
 from belinda_app.settings import get_settings
 
-
 settings = get_settings()
 
 
@@ -50,7 +49,6 @@ class MusicianAuthorizationService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
             )
 
         return musician
@@ -91,3 +89,32 @@ class MusicianAuthorizationService:
         await session.commit()
 
         return musician_session
+
+    @classmethod
+    async def get_current_musician(cls, session: AsyncSession, musician_id: UUID, access_token: str):
+        musician_session = await session.execute(
+            select(MusicianSession)
+            .where(MusicianSession.musician_id == musician_id)
+            .where(MusicianSession.access_token == access_token)
+            .where(MusicianSession.is_active == True)
+        )
+        musician_session = musician_session.scalar_one_or_none()
+
+        if not musician_session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Access denied. Please log in again.",
+            )
+
+        musician = await session.execute(
+            select(Musician).where(Musician.musician_id == musician_session.musician_id)
+        )
+        musician = musician.scalar()
+
+        if not musician:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Musician not found",
+            )
+
+        return musician

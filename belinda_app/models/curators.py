@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-from typing import List, TYPE_CHECKING, Optional, Dict, Union
+from typing import List, TYPE_CHECKING, Optional, Dict
 
 from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel, Relationship
@@ -16,7 +16,7 @@ class Curator(SQLModel, table=True):
     name: str | None
     desc: str | None
     socialLinks: List[Dict[str, str]] | None = Field(default=None, sa_column=Column(JSON))
-    playlists: List[Dict[str, Union[str, int]]] | None = Field(default=None, sa_column=Column(JSON))
+    playlists: List[Dict[str, int]] | None = Field(default=None, sa_column=Column(JSON))
 
     deal: Optional[List["Deal"]] = Relationship(back_populates="curator")
     user_session: Optional[List["CuratorSession"]] = Relationship(back_populates="curator")

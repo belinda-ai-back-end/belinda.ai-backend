@@ -4,13 +4,13 @@ from pydantic import BaseModel
 
 
 class SocialLink(BaseModel):
-    name: str
-    link: str
+    name: Optional[str]
+    link: Optional[str]
 
 
 class Playlist(BaseModel):
-    link: str
-    cost: int
+    link: Optional[str]
+    cost: Optional[int]
 
 
 class CreateCuratorRequest(BaseModel):

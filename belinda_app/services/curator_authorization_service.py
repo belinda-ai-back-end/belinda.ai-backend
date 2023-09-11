@@ -50,7 +50,6 @@ class CuratorAuthorizationService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
             )
 
         return curator
@@ -91,3 +90,32 @@ class CuratorAuthorizationService:
         await session.commit()
 
         return curator_session
+
+    @classmethod
+    async def get_current_curator(session: AsyncSession, curator_id: UUID, access_token: str):
+        curator_session = await session.execute(
+            select(CuratorSession)
+            .where(CuratorSession.curator_id == curator_id)
+            .where(CuratorSession.access_token == access_token)
+            .where(CuratorSession.is_active == True)
+        )
+        curator_session = curator_session.scalar_one_or_none()
+
+        if not curator_session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Access denied. Please log in again.",
+            )
+
+        curator = await session.execute(
+            select(Curator).where(Curator.curator_id == curator_session.curator_id)
+        )
+        curator = curator.scalar()
+
+        if not curator:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Curator not found",
+            )
+
+        return curator
