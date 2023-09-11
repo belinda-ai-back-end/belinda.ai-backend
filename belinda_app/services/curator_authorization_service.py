@@ -18,7 +18,6 @@ class CuratorAuthorizationService:
     async def register_curator(cls, session: AsyncSession, request: CreateCuratorRequest):
         existing_curator = await session.execute(select(Curator).where(Curator.email == request.email))
         existing_curator = existing_curator.scalar()
-
         if existing_curator:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,7 +25,9 @@ class CuratorAuthorizationService:
             )
 
         curator_data = request.dict()
+        print("request curator_data:", curator_data)
         new_curator = Curator(**curator_data)
+        print("request new_curator:", new_curator)
 
         session.add(new_curator)
 
