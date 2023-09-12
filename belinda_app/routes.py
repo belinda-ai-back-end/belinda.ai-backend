@@ -40,7 +40,7 @@ async def healthcheck(request: Request):
 
 
 # Получение 100 рандомных плейлистов
-@router.get("/playlists", dependencies=[Depends(check_cookie)])
+@router.get("/playlists")
 async def get_playlists():
     async with SessionLocal() as session:
         query = await session.execute(
@@ -52,7 +52,7 @@ async def get_playlists():
 
 
 # Выдача всех треков для musician
-@router.get("/get_tracks_for_musician/{musician_id}", dependencies=[Depends(check_cookie)])
+@router.get("/get_tracks_for_musician/{musician_id}")
 async def get_tracks_for_musician(musician_id: UUID):
     async with SessionLocal() as session:
         try:
@@ -71,7 +71,7 @@ async def get_tracks_for_musician(musician_id: UUID):
 
 
 # Выдача всех сделок для curator
-@router.get("/get_deals_for_curator/{curator_id}", dependencies=[Depends(check_cookie)])
+@router.get("/get_deals_for_curator/{curator_id}")
 async def get_deals_for_curator(curator_id: UUID):
     async with SessionLocal() as session:
         try:
@@ -91,7 +91,7 @@ async def get_deals_for_curator(curator_id: UUID):
 
 # Выдача всех сделок musician_track, которые учавствуют в ней
 
-@router.get("/get_deals_for_track/{musician_track_id}", dependencies=[Depends(check_cookie)])
+@router.get("/get_deals_for_track/{musician_track_id}")
 async def get_deals_for_track(track_id: UUID):
     async with SessionLocal() as session:
         try:
@@ -110,7 +110,7 @@ async def get_deals_for_track(track_id: UUID):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/feedback", dependencies=[Depends(check_cookie)])
+@router.post("/feedback")
 async def set_feedback(musician_id: UUID, playlist_id: UUID, rating: RatingEnum):
     async with SessionLocal() as session:
         stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
@@ -156,7 +156,7 @@ async def set_feedback(musician_id: UUID, playlist_id: UUID, rating: RatingEnum)
 
 
 # Создание сделки
-@router.post("/create_deal", dependencies=[Depends(check_cookie)])
+@router.post("/create_deal")
 async def create_deal(deal_request: CreateDealRequest) -> dict:
     async with SessionLocal() as session:
         try:
@@ -289,7 +289,7 @@ async def logout_curator(curator_id: UUID, access_token: str = Cookie(None)):
     return response
 
 
-@router.put("/update_deal_status/curator/{deal_id}", dependencies=[Depends(check_cookie)])
+@router.put("/update_deal_status/curator/{deal_id}")
 async def update_curator_deal_status(
         deal_id: UUID,
         new_status: StatusKeyEnumForCurator,
@@ -299,7 +299,7 @@ async def update_curator_deal_status(
     return {"message": "Deal status updated successfully for curator"}
 
 
-@router.put("/update_deal_status/musician/{deal_id}", dependencies=[Depends(check_cookie)])
+@router.put("/update_deal_status/musician/{deal_id}")
 async def update_musician_deal_status(
         deal_id: UUID,
         new_status: StatusKeyEnumForMusician,
