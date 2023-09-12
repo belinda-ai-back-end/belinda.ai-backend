@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, UploadFile, File, Form
+from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import func, select, exists
@@ -170,24 +170,9 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
 
 
 @router.post("/register/musician")
-async def register_musician(
-    name: str = Form(None),
-    phone: str = Form(None),
-    email: str = Form(None),
-    password: str = Form(None),
-    artistName: str = Form(None),
-    origin: str = Form(None),
-):
-    musician_request = CreateMusicianRequest(
-        name=name,
-        phone=phone,
-        email=email,
-        password=password,
-        artistName=artistName,
-        origin=origin,
-    )
+async def register_musician(request: CreateMusicianRequest):
     async with SessionLocal() as session:
-        new_musician = await MusicianAuthorizationService.register_musician(session, musician_request)
+        new_musician = await MusicianAuthorizationService.register_musician(session, request)
 
         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(str(new_musician.musician_id), expires_delta)
@@ -206,16 +191,9 @@ async def register_musician(
 
 
 @router.post("/login/musician")
-async def login_musician(
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    login_request = MusicianEmail(
-        email=email,
-        password=password
-    )
+async def login_musician(request: MusicianEmail):
     async with SessionLocal() as session:
-        musician = await MusicianAuthorizationService.login_musician(session, login_request)
+        musician = await MusicianAuthorizationService.login_musician(session, request)
 
         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(str(musician.musician_id), expires_delta)
@@ -251,20 +229,10 @@ async def logout_musician(musician_id: UUID, access_token: str = Cookie(None)):
     return response
 
 
-# Попытка поработать с FormData, которая не может обработать в объекте массива json
 @router.post("/register/curator")
-async def register_curator(form_data: CreateCuratorRequest = Depends()):
-    curator_request = CreateCuratorRequest(
-        email=form_data.email,
-        password=form_data.password,
-        name=form_data.name,
-        desc=form_data.desc,
-        socialLinks=form_data.socialLinks,
-        playlists=form_data.playlists,
-    )
-
+async def register_curator(request: CreateCuratorRequest):
     async with SessionLocal() as session:
-        new_curator = await CuratorAuthorizationService.register_curator(session, curator_request)
+        new_curator = await CuratorAuthorizationService.register_curator(session, request)
 
         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(str(new_curator.curator_id), expires_delta)
@@ -283,17 +251,9 @@ async def register_curator(form_data: CreateCuratorRequest = Depends()):
 
 
 @router.post("/login/curator")
-async def login_curator(
-    email: str = Form(...),
-    password: str = Form(...)
-):
-    login_request = CuratorEmail(
-        email=email,
-        password=password
-    )
-
+async def login_curator(request: CuratorEmail):
     async with SessionLocal() as session:
-        curator = await CuratorAuthorizationService.login_curator(session, login_request)
+        curator = await CuratorAuthorizationService.login_curator(session, request)
 
         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(str(curator.curator_id), expires_delta)
@@ -438,25 +398,3 @@ async def upload_playlists(file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail=str(e))
         finally:
             await session.close()
-
-
-# @router.post("/register/curator")
-# async def register_curator(request: CreateCuratorRequest):
-#     print("request playlist:", request.playlists)
-#     async with SessionLocal() as session:
-#         new_curator = await CuratorAuthorizationService.register_curator(session, request)
-#
-#         expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
-#         access_token = create_access_token(str(new_curator.curator_id), expires_delta)
-#
-#         await CuratorAuthorizationService.create_curator_session(session, new_curator.curator_id, access_token)
-#         response = JSONResponse(content={
-#             "message": "Successful register",
-#         })
-#
-#         response.set_cookie(
-#             key="access_token",
-#             value=access_token,
-#             httponly=True,
-#         )
-#         return response
