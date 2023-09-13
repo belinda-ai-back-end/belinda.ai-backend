@@ -8,7 +8,7 @@ class SocialLink(BaseModel):
     link: Optional[str]
 
 
-class Playlist(BaseModel):
+class CuratorPlaylist(BaseModel):
     link: Optional[str]
     cost: Optional[int]
 
@@ -19,7 +19,7 @@ class CreateCuratorRequest(BaseModel):
     name: Optional[str]
     desc: Optional[str]
     socialLinks: Optional[List[SocialLink]]
-    playlists: Optional[List[Playlist]]
+    playlists: Optional[List[CuratorPlaylist]]
 
 
 class CuratorEmail(BaseModel):

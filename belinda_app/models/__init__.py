@@ -4,6 +4,6 @@ from .curators import Curator
 from .feedback import Feedback, RatingEnum
 from .deals import Deal, StatusKeyEnumForCurator, StatusKeyEnumForMusician
 from .musician import Musician
-from .musician_track import MusicianTrack, GenreEnum  # AudioFile
+from .musician_track import MusicianTrack
 from .curator_session import CuratorSession
 from .musician_session import MusicianSession

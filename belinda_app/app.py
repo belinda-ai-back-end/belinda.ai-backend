@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import FastAPI
@@ -38,3 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+if __name__ == "__main__":
+    asyncio.run(on_startup())

@@ -1,6 +1,5 @@
 import json
 from uuid import UUID
-
 from datetime import datetime, timedelta
 
 import psutil as psutil
@@ -12,11 +11,11 @@ from sqlalchemy.exc import IntegrityError
 
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, create_access_token, check_cookie,
-                                  MusicianAuthorizationService, CuratorAuthorizationService)
+                                  MusicianAuthorizationService, CuratorAuthorizationService, MusicianTrackService)
 from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
                                 StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
 from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest, MusicianEmail,
-                                 CreateCuratorRequest, CuratorEmail)
+                                 CreateCuratorRequest, CuratorEmail, CreateMusicianTrackRequest)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
 
 settings = get_settings()
@@ -90,7 +89,6 @@ async def get_deals_for_curator(curator_id: UUID):
 
 
 # Выдача всех сделок musician_track, которые учавствуют в ней
-
 @router.get("/get_deals_for_track/{musician_track_id}", dependencies=[Depends(check_cookie)])
 async def get_deals_for_track(track_id: UUID):
     async with SessionLocal() as session:
@@ -111,7 +109,7 @@ async def get_deals_for_track(track_id: UUID):
 
 
 @router.post("/feedback", dependencies=[Depends(check_cookie)])
-async def set_feedback(musician_id: UUID, playlist_id: UUID, rating: RatingEnum):
+async def set_feedback(musician_id: UUID, playlist_id: str, rating: RatingEnum):
     async with SessionLocal() as session:
         stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
         user = stmt_user.scalar_one_or_none()
@@ -153,6 +151,12 @@ async def set_feedback(musician_id: UUID, playlist_id: UUID, rating: RatingEnum)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User or playlist not found"
         )
+
+
+# Добавление трека музыканта
+@router.post("/add_musician_track", dependencies=[Depends(check_cookie)])
+async def create_track(musician_track: CreateMusicianTrackRequest):
+    return await MusicianTrackService(musician_track)()
 
 
 # Создание сделки
