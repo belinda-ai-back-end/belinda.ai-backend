@@ -5,11 +5,11 @@ from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
-    from .musician import Musician
+    from .artist import Artist
     from .deals import Deal
 
 
-class MusicianTrack(SQLModel, table=True):
+class ArtistTrack(SQLModel, table=True):
     __tablename__ = "".join(["_" + i.lower() if i.isupper() else i for i in __qualname__]).lstrip("_")  # noqa: F821
 
     track_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
@@ -21,10 +21,10 @@ class MusicianTrack(SQLModel, table=True):
     trackLink: str | None
     trackOverview: str | None
     similarArtist: str | None
-    musician_id: UUID = Field(default=None, foreign_key="musician.musician_id")
+    artist_id: UUID = Field(default=None, foreign_key="artist.artist_id")
 
-    musician: Optional[List["Musician"]] = Relationship(back_populates="musician_track")
-    deal: Optional[List["Deal"]] = Relationship(back_populates="musician_track")
+    artist: Optional[List["Artist"]] = Relationship(back_populates="artist_track")
+    deal: Optional[List["Deal"]] = Relationship(back_populates="artist_track")
 
     class Config:
         arbitrary_types_allowed = True

@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class CreateMusicianRequest(BaseModel):
+class CreateArtistRequest(BaseModel):
     name: Optional[str]
     phone: Optional[str]
     email: Optional[str]
@@ -13,6 +13,6 @@ class CreateMusicianRequest(BaseModel):
     origin: Optional[str]
 
 
-class MusicianEmail(BaseModel):
+class ArtistEmail(BaseModel):
     email: str
     password: str

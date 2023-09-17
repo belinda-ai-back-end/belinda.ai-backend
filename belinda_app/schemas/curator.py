@@ -3,12 +3,12 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 
-class SocialLink(BaseModel):
+class SocialLinkSchemas(BaseModel):
     name: Optional[str]
     link: Optional[str]
 
 
-class CuratorPlaylist(BaseModel):
+class CuratorPlaylistSchemas(BaseModel):
     link: Optional[str]
     cost: Optional[int]
 
@@ -18,8 +18,8 @@ class CreateCuratorRequest(BaseModel):
     password: Optional[str]
     name: Optional[str]
     desc: Optional[str]
-    socialLinks: Optional[List[SocialLink]]
-    playlists: Optional[List[CuratorPlaylist]]
+    socialLinks: Optional[List[SocialLinkSchemas]]
+    playlists: Optional[List[CuratorPlaylistSchemas]]
 
 
 class CuratorEmail(BaseModel):

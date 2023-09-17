@@ -1,9 +1,10 @@
 import json
+from typing import List
 from uuid import UUID
 from datetime import datetime, timedelta
 
 import psutil as psutil
-from fastapi import Request, APIRouter, HTTPException, Depends, status, Cookie, UploadFile, File
+from fastapi import Request, APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from sqlalchemy import func, select, exists
@@ -11,13 +12,14 @@ from sqlalchemy.exc import IntegrityError
 
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, create_access_token, check_cookie,
-                                  MusicianAuthorizationService, CuratorAuthorizationService, MusicianTrackService)
-from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForMusician,
-                                StatusKeyEnumForCurator, RatingEnum, Musician, MusicianTrack)
-from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateMusicianRequest, MusicianEmail,
-                                 CreateCuratorRequest, CuratorEmail, CreateMusicianTrackRequest)
+                                  ArtistAuthorizationService, CuratorAuthorizationService, ArtistTrackService)
+from belinda_app.models import (Playlist, Feedback, Curator, Deal, StatusKeyEnumForArtist,
+                                StatusKeyEnumForCurator, RatingEnum, Artist,
+                                ArtistTrack, CuratorPlaylist, CuratorSocialLink)
+from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateArtistRequest, ArtistEmail,
+                                 CreateCuratorRequest, CuratorEmail, CreateArtistTrackRequest, CuratorPlaylistSchemas)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
-
+from belinda_app.utils import get_user_id
 settings = get_settings()
 
 router = APIRouter()
@@ -50,17 +52,17 @@ async def get_playlists():
     return random_playlists
 
 
-# Выдача всех треков для musician
-@router.get("/get_tracks_for_musician/{musician_id}", dependencies=[Depends(check_cookie)])
-async def get_tracks_for_musician(musician_id: UUID):
+# Выдача всех треков для artist
+@router.get("/get_tracks_for_artist", dependencies=[Depends(check_cookie)])
+async def get_tracks_for_artist(artist_id: UUID = Depends(get_user_id)):
     async with SessionLocal() as session:
         try:
-            musician_result = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
-            musician = musician_result.scalar_one_or_none()
-            if not musician:
-                raise HTTPException(status_code=404, detail="Musician not found")
+            artist_result = await session.execute(select(Artist).where(Artist.artist_id == artist_id))
+            artist = artist_result.scalar_one_or_none()
+            if not artist:
+                raise HTTPException(status_code=404, detail="Artist not found")
 
-            tracks_result = await session.execute(select(MusicianTrack).where(MusicianTrack.musician_id == musician_id))
+            tracks_result = await session.execute(select(ArtistTrack).where(ArtistTrack.artist_id == artist_id))
             tracks = tracks_result.scalars().all()
 
             return tracks
@@ -70,8 +72,8 @@ async def get_tracks_for_musician(musician_id: UUID):
 
 
 # Выдача всех сделок для curator
-@router.get("/get_deals_for_curator/{curator_id}", dependencies=[Depends(check_cookie)])
-async def get_deals_for_curator(curator_id: UUID):
+@router.get("/get_deals_for_curator", dependencies=[Depends(check_cookie)])
+async def get_deals_for_curator(curator_id: UUID = Depends(get_user_id)):
     async with SessionLocal() as session:
         try:
             curator_result = await session.execute(select(Curator).where(Curator.curator_id == curator_id))
@@ -88,18 +90,18 @@ async def get_deals_for_curator(curator_id: UUID):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-# Выдача всех сделок musician_track, которые учавствуют в ней
-@router.get("/get_deals_for_track/{musician_track_id}", dependencies=[Depends(check_cookie)])
+# Выдача всех сделок artist_track, которые учавствуют в ней
+@router.get("/get_deals_for_track", dependencies=[Depends(check_cookie)])
 async def get_deals_for_track(track_id: UUID):
     async with SessionLocal() as session:
         try:
-            musician_track_result = await session.execute(
-                select(MusicianTrack).where(MusicianTrack.track_id == track_id))
-            musician_track = musician_track_result.scalar_one_or_none()
-            if not musician_track:
-                raise HTTPException(status_code=404, detail="MusicianTrack not found")
+            artist_track_result = await session.execute(
+                select(ArtistTrack).where(ArtistTrack.track_id == track_id))
+            artist_track = artist_track_result.scalar_one_or_none()
+            if not artist_track:
+                raise HTTPException(status_code=404, detail="Artist track not found")
 
-            deals_result = await session.execute(select(Deal).where(Deal.musician_track_id == track_id))
+            deals_result = await session.execute(select(Deal).where(Deal.artist_track_id == track_id))
             deals = deals_result.scalars().all()
 
             return deals
@@ -109,9 +111,9 @@ async def get_deals_for_track(track_id: UUID):
 
 
 @router.post("/feedback", dependencies=[Depends(check_cookie)])
-async def set_feedback(musician_id: UUID, playlist_id: str, rating: RatingEnum):
+async def set_feedback(artist_id: UUID, playlist_id: str, rating: RatingEnum):
     async with SessionLocal() as session:
-        stmt_user = await session.execute(select(Musician).where(Musician.musician_id == musician_id))
+        stmt_user = await session.execute(select(Artist).where(Artist.artist_id == artist_id))
         user = stmt_user.scalar_one_or_none()
 
         stmt_playlist = await session.execute(
@@ -122,7 +124,7 @@ async def set_feedback(musician_id: UUID, playlist_id: str, rating: RatingEnum):
         if user is not None and playlist is not None:
             feedback_result = await session.execute(
                 select(Feedback).where(
-                    Feedback.musician_id == musician_id, Feedback.playlist_id == playlist_id
+                    Feedback.artist_id == artist_id, Feedback.playlist_id == playlist_id
                 )
             )
             feedback = feedback_result.scalar_one_or_none()
@@ -140,7 +142,7 @@ async def set_feedback(musician_id: UUID, playlist_id: str, rating: RatingEnum):
                 feedback.rating = rating
             else:
                 feedback = Feedback(
-                    musician_id=musician_id, playlist_id=playlist_id, rating=rating
+                    artist_id=artist_id, playlist_id=playlist_id, rating=rating
                 )
                 message = f"Set {rating.capitalize()}"
                 session.add(feedback)
@@ -153,18 +155,12 @@ async def set_feedback(musician_id: UUID, playlist_id: str, rating: RatingEnum):
         )
 
 
-# Добавление трека музыканта
-@router.post("/add_musician_track", dependencies=[Depends(check_cookie)])
-async def create_track(musician_track: CreateMusicianTrackRequest):
-    return await MusicianTrackService(musician_track)()
-
-
 # Создание сделки
 @router.post("/create_deal", dependencies=[Depends(check_cookie)])
 async def create_deal(deal_request: CreateDealRequest) -> dict:
     async with SessionLocal() as session:
         try:
-            deal = Deal(**deal_request.dict(), status=StatusKeyEnumForMusician.submit)
+            deal = Deal(**deal_request.dict())
             session.add(deal)
             await session.commit()
         except Exception as e:
@@ -173,53 +169,53 @@ async def create_deal(deal_request: CreateDealRequest) -> dict:
         return {"message": "Deal created successfully"}
 
 
-@router.post("/register/musician")
-async def register_musician(request: CreateMusicianRequest):
-    async with SessionLocal() as session:
-        new_musician = await MusicianAuthorizationService.register_musician(session, request)
+@router.post("/register_artist")
+async def register(request: CreateArtistRequest):
+    new_artist = await ArtistAuthorizationService().register_artist(request)
 
-        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
-        access_token = create_access_token(str(new_musician.musician_id), expires_delta)
+    expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+    access_token = create_access_token(str(new_artist.artist_id), expires_delta)
 
-        await MusicianAuthorizationService.create_musician_session(session, new_musician.musician_id, access_token)
-        response = JSONResponse(content={
-            "message": "Successful register",
-        })
+    await ArtistAuthorizationService().create_artist_session(new_artist.artist_id, access_token)
+    response = JSONResponse(content={
+        "message": "Successful register",
+    })
 
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-        )
-        return response
-
-
-@router.post("/login/musician")
-async def login_musician(request: MusicianEmail):
-    async with SessionLocal() as session:
-        musician = await MusicianAuthorizationService.login_musician(session, request)
-
-        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
-        access_token = create_access_token(str(musician.musician_id), expires_delta)
-
-        await MusicianAuthorizationService.create_musician_session(session, musician.musician_id, access_token)
-        response = JSONResponse(content={
-            "message": "Successful email",
-            "musician_id": str(musician.musician_id)
-        })
-
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-        )
-        return response
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+    )
+    return response
 
 
-@router.post("/logout/musician")
-async def logout_musician(musician_id: UUID, access_token: str = Cookie(None)):
-    async with SessionLocal() as session:
-        await MusicianAuthorizationService.logout_musician(session, musician_id)
+@router.post("/login_artist")
+async def login(request: ArtistEmail):
+    artist = await ArtistAuthorizationService().login_artist(request)
+
+    expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+    access_token = create_access_token(str(artist.artist_id), expires_delta)
+
+    await ArtistAuthorizationService().create_artist_session(artist.artist_id, access_token)
+    response = JSONResponse(content={"message": "Successful login"})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+    )
+    return response
+
+
+# Добавление трека музыканта
+@router.post("/add_artist_track", dependencies=[Depends(check_cookie)])
+async def create_track(artist_track: CreateArtistTrackRequest, artist_id: UUID = Depends(get_user_id)):
+    return await ArtistTrackService(artist_track, artist_id)()
+
+
+@router.post("/logout", dependencies=[Depends(check_cookie)])
+async def logout(artist_id: UUID = Depends(get_user_id)):
+    await ArtistAuthorizationService().logout_artist(artist_id)
 
     response = JSONResponse(content={"message": "Logged out successfully"})
 
@@ -233,53 +229,72 @@ async def logout_musician(musician_id: UUID, access_token: str = Cookie(None)):
     return response
 
 
-@router.post("/register/curator")
-async def register_curator(request: CreateCuratorRequest):
+@router.post("/register_curator")
+async def register(request: CreateCuratorRequest):
+    new_curator = await CuratorAuthorizationService().register_curator(request)
+
+    expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+    access_token = create_access_token(str(new_curator.curator_id), expires_delta)
+
+    await CuratorAuthorizationService().create_curator_session(new_curator.curator_id, access_token)
+    response = JSONResponse(content={
+        "message": "Successful register",
+    })
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+    )
+    return response
+
+
+@router.post("/login_curator")
+async def login(request: CuratorEmail):
+    curator = await CuratorAuthorizationService().login_curator(request)
+
+    expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+    access_token = create_access_token(str(curator.curator_id), expires_delta)
+
+    await CuratorAuthorizationService().create_curator_session(curator.curator_id, access_token)
+    response = JSONResponse(content={"message": "Successful login"})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+    )
+    return response
+
+
+@router.post("/add_curator_playlist", dependencies=[Depends(check_cookie)])
+async def add_playlist(
+        playlists: List[CuratorPlaylistSchemas],
+        curator_id: UUID = Depends(get_user_id),
+):
     async with SessionLocal() as session:
-        new_curator = await CuratorAuthorizationService.register_curator(session, request)
+        try:
+            for pl in playlists:
+                playlist = CuratorPlaylist(
+                    link=pl.link,
+                    cost=pl.cost,
+                    curator_id=curator_id
+                )
+                session.add(playlist)
+            await session.commit()
 
-        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
-        access_token = create_access_token(str(new_curator.curator_id), expires_delta)
-
-        await CuratorAuthorizationService.create_curator_session(session, new_curator.curator_id, access_token)
-        response = JSONResponse(content={
-            "message": "Successful register",
-        })
-
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-        )
-        return response
-
-
-@router.post("/login/curator")
-async def login_curator(request: CuratorEmail):
-    async with SessionLocal() as session:
-        curator = await CuratorAuthorizationService.login_curator(session, request)
-
-        expires_delta = timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
-        access_token = create_access_token(str(curator.curator_id), expires_delta)
-
-        await CuratorAuthorizationService.create_curator_session(session, curator.curator_id, access_token)
-        response = JSONResponse(content={
-            "message": "Successful email",
-            "musician_id": str(curator.curator_id)
-        })
-
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-        )
-        return response
+        except Exception as e:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to save information. ERROR: {e}",
+            )
+    return {"message": "Add new playlist"}
 
 
-@router.post("/logout/curator")
-async def logout_curator(curator_id: UUID, access_token: str = Cookie(None)):
-    async with SessionLocal() as session:
-        await CuratorAuthorizationService.logout_curator(session, curator_id)
+@router.post("/logout_curator", dependencies=[Depends(check_cookie)])
+async def logout(curator_id: UUID = Depends(get_user_id)):
+    await CuratorAuthorizationService().logout_curator(curator_id)
 
     response = JSONResponse(content={"message": "Logged out successfully"})
 
@@ -303,42 +318,56 @@ async def update_curator_deal_status(
     return {"message": "Deal status updated successfully for curator"}
 
 
-@router.put("/update_deal_status/musician/{deal_id}", dependencies=[Depends(check_cookie)])
-async def update_musician_deal_status(
+@router.put("/update_deal_status_artist/{deal_id}", dependencies=[Depends(check_cookie)])
+async def update_artist_deal_status(
         deal_id: UUID,
-        new_status: StatusKeyEnumForMusician,
+        new_status: StatusKeyEnumForArtist,
         session: SessionLocal = Depends(get_session)
 ):
-    await update_deal_status(session, str(deal_id), RoleEnum.musician, new_status)
-    return {"message": "Deal status updated successfully for musician"}
+    await update_deal_status(session, str(deal_id), RoleEnum.artist, new_status)
+    return {"message": "Deal status updated successfully for artist"}
 
 
 # Добавление кураторов в базу (не тыкать)
 @router.post("/upload_curators")
 async def upload_curators(file: UploadFile = File(...)):
     try:
-        contents = await file.read()
-        curator_data = json.loads(contents)
-
         async with SessionLocal() as session:
             try:
-                for curator_name, curator_details in curator_data.items():
+                contents = await file.read()
+                curator_data = json.loads(contents)
+
+                for curator_details in curator_data:
                     curator_exists = await session.execute(select(exists().where(
-                        Curator.name == curator_name)))
+                        Curator.name == curator_details["name"])))
                     if not curator_exists.scalar():
-                        social_links = []
-                        social_links_data = curator_details.get("socialLinks", {})
-                        for platform, link in social_links_data.items():
-                            social_links.append({"name": platform, "link": link})
+                        social_links = curator_details["socialLinks"]
+                        playlists = curator_details.get("playlists", [])
 
                         curator = Curator(
                             name=curator_details["name"],
                             desc=curator_details["desc"],
-                            email=curator_details.get("email"),
-                            password=curator_details.get("password"),
-                            socialLinks=social_links,
-                            playlists=None
+                            email=curator_details["email"],
+                            password=curator_details["password"],
                         )
+
+                        # Создаем и добавляем связанные сущности
+                        for link in social_links:
+                            social_link = CuratorSocialLink(
+                                name=link["name"],
+                                link=link["link"],
+                                curator=curator
+                            )
+                            session.add(social_link)
+
+                        for playlist in playlists:
+                            curator_playlist = CuratorPlaylist(
+                                link=playlist["link"],
+                                cost=playlist.get("cost", 0),
+                                curator=curator
+                            )
+                            session.add(curator_playlist)
+
                         session.add(curator)
 
                 await session.commit()
@@ -350,9 +379,6 @@ async def upload_curators(file: UploadFile = File(...)):
             except Exception as e:
                 await session.rollback()
                 raise HTTPException(status_code=500, detail=str(e))
-            finally:
-                await session.close()
-
     except Exception as e:
         raise HTTPException(status_code=400, detail="Failed to read JSON file")
 

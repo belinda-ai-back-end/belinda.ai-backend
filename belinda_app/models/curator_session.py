@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 
 if TYPE_CHECKING:
-    from .curators import Curator
+    from .curator import Curator
 
 
 class CuratorSession(SQLModel, table=True):
