@@ -1,4 +1,5 @@
 from .deal_service import update_deal_status, RoleEnum
 from .create_access_token_service import create_access_token, check_cookie
-from .musician_authorization_service import MusicianAuthorizationService
+from .artist_authorization_service import ArtistAuthorizationService
 from .curator_authorization_service import CuratorAuthorizationService
+from .artist_track_service import ArtistTrackService

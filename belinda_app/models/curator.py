@@ -1,12 +1,13 @@
 from uuid import UUID, uuid4
-from typing import List, TYPE_CHECKING, Optional, Dict
+from typing import List, TYPE_CHECKING, Optional
 
-from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from .deals import Deal
     from .curator_session import CuratorSession
+    from .curator_playlist import CuratorPlaylist
+    from .curator_social_link import CuratorSocialLink
 
 
 class Curator(SQLModel, table=True):
@@ -15,11 +16,9 @@ class Curator(SQLModel, table=True):
     password: str | None
     name: str | None
     desc: str | None
-    socialLinks: List[Dict[str, str]] | None = Field(default=None, sa_column=Column(JSON))
-    playlists: List[Dict[str, str | int]] | None = Field(default=None, sa_column=Column(JSON))
+
+    socialLinks: List["CuratorSocialLink"] = Relationship(back_populates="curator")
+    playlists: List["CuratorPlaylist"] = Relationship(back_populates="curator")
 
     deal: Optional[List["Deal"]] = Relationship(back_populates="curator")
     user_session: Optional[List["CuratorSession"]] = Relationship(back_populates="curator")
-
-    class Config:
-        arbitrary_types_allowed = True

@@ -2,9 +2,15 @@
 import logging
 
 from fastapi.logger import logger
-# from fastapi import Request
-# from belinda_app.models import Track, Playlist, Curator
+from fastapi import Request
+from jwt import decode
+# from belinda_app.models import Track
 # from belinda_app.db.database import SessionLocal
+from belinda_app.settings import get_settings
+
+settings = get_settings()
+
+SECRET_KEY = settings.SESSION_SECRET_KEY
 
 
 def setup_logger():
@@ -14,70 +20,10 @@ def setup_logger():
     logger.handlers = gunicorn_error_logger.handlers
 
 
-# def get_jwt_token(request: Request):
-#     jwt_token = request.headers.get("Authorization", None)
-#     if jwt_token is not None:
-#         return jwt_token.replace("Bearer ", "")
-#     return None
-
-# async def curator():
-#     with open('curators.json', 'r') as file:
-#         content = file.read()
-#         curator_data = json.loads(content)
-#     async with SessionLocal() as session:
-#         for curator_name, curator_details in curator_data.items():
-#             curator = Curator(
-#                 name=curator_details["name"],
-#                 desc=curator_details["desc"],
-#                 facebookLink=curator_details["facebookLink"],
-#                 spotifyLink=curator_details["spotifyLink"],
-#                 instagramLink=curator_details["instagramLink"],
-#                 tiktokLink=curator_details["tiktokLink"],
-#                 twitterLink=curator_details["twitterLink"],
-#                 youtubeLink=curator_details["youtubeLink"],
-#                 appleMusicLink=curator_details["appleMusicLink"],
-#                 mixcloudLink=curator_details["mixcloudLink"],
-#                 twitchLink=curator_details["twitchLink"],
-#             )
-#             session.add(curator)
-#
-#         await session.commit()
-#     return {"message": "Data uploaded successfully"}
-
-
-# async def playlist():
-#     with open('playlists.json', 'r') as file:
-#         content = file.read()
-#         playlist_data = json.loads(content)
-#     async with SessionLocal() as session:
-#         for playlist_name, playlist_details in playlist_data.items():
-#             images = playlist_details.get("images", [])
-#             imagesUrl = images[0]["url"] if images else None
-#
-#             playlist = Playlist(
-#                 id=playlist_name,
-#                 collaborative=playlist_details["collaborative"],
-#                 description=playlist_details["description"],
-#                 externalUrlsSpotify=playlist_details["external_urls"]["spotify"],
-#                 images=images,
-#                 imagesUrl=imagesUrl,
-#                 href=playlist_details["href"],
-#                 name=playlist_details["name"],
-#                 ownerId=playlist_details["owner"]["id"],
-#                 ownerDisplayName=playlist_details["owner"]["display_name"],
-#                 ownerHref=playlist_details["owner"]["href"],
-#                 ownerShort=playlist_details["ownerShort"],
-#                 primaryColor=playlist_details["primaryColor"],
-#                 public=playlist_details["public"],
-#                 snapshotId=playlist_details["snapshotId"],
-#                 tracksTotal=playlist_details["tracks"]["total"],
-#                 type=playlist_details["type"],
-#                 uri=playlist_details["uri"],
-#             )
-#             session.add(playlist)
-#
-#     await session.commit()
-#     return {"message": "Data uploaded successfully"}
+def get_user_id(request: Request):
+    access_token = request.cookies.get("access_token")
+    token_data = decode(jwt=access_token, key=SECRET_KEY, algorithms=["HS256"])
+    return token_data["user_id"]
 
 
 # Скрипт валидации json
