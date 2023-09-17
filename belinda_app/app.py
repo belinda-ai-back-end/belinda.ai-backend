@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import FastAPI
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Belinda.ai",
-    description="Helping musicians discover the best potential partner for expansion of the audience using AI",
+    description="Helping artists discover the best potential partner for expansion of the audience using AI",
     version="1.0.0",
     docs_url="/docs"
 )
@@ -38,3 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+if __name__ == "__main__":
+    asyncio.run(on_startup())

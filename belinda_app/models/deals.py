@@ -6,13 +6,13 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
-    from .curators import Curator
+    from .curator import Curator
     from .playlists import Playlist
-    from .musician import Musician
-    from .musician_track import MusicianTrack
+    from .artist import Artist
+    from .artist_track import ArtistTrack
 
 
-class StatusKeyEnumForMusician(str, Enum):
+class StatusKeyEnumForArtist(str, Enum):
     submit = "Submit Application"
     awaiting = "Awaiting review"
     confirmed_payment = "Confirmed, awaiting payment"
@@ -33,12 +33,12 @@ class Deal(SQLModel, table=True):
     deal_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     curator_id: UUID = Field(default=None, foreign_key="curator.curator_id")
     playlist_id: str = Field(default=None, foreign_key="playlist.id")
-    musician_track_id: UUID = Field(default=None, foreign_key="musician_track.track_id")
-    musician_id: UUID = Field(default=None, foreign_key="musician.musician_id")
+    artist_track_id: UUID = Field(default=None, foreign_key="artist_track.track_id")
+    artist_id: UUID = Field(default=None, foreign_key="artist.artist_id")
     price: Decimal | None
-    status: StatusKeyEnumForMusician | None = Field(default=StatusKeyEnumForMusician.submit)
+    status: StatusKeyEnumForArtist | None = Field(default=StatusKeyEnumForArtist.submit)
 
     curator: Optional["Curator"] = Relationship(back_populates="deal")
     playlist: Optional["Playlist"] = Relationship(back_populates="deal")
-    musician_track: Optional["MusicianTrack"] = Relationship(back_populates="deal")
-    musician: Optional["Musician"] = Relationship(back_populates="deal")
+    artist_track: Optional["ArtistTrack"] = Relationship(back_populates="deal")
+    artist: Optional["Artist"] = Relationship(back_populates="deal")

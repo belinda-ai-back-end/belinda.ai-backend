@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "belinda-ai"
 version = "0.1.0"
-description = "Helping musicians discover the best potential partner for expansion of the audience using AI"
+description = "Helping artist discover the best potential partner for expansion of the audience using AI"
 authors = ["Matveeva.S.P"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "belinda"}]
+packages = [{include = "belinda_app"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

@@ -4,15 +4,15 @@ from typing import Union, Dict
 from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid
 
-from belinda_app.models import Deal, StatusKeyEnumForCurator, StatusKeyEnumForMusician
+from belinda_app.models import Deal, StatusKeyEnumForCurator, StatusKeyEnumForArtist
 
 
 class RoleEnum(str, Enum):
     curator = "curator"
-    musician = "musician"
+    artist = "artist"
 
 
-status_mapping: Dict[RoleEnum, Dict[str, Union[StatusKeyEnumForCurator, StatusKeyEnumForMusician]]] = {
+status_mapping: Dict[RoleEnum, Dict[str, Union[StatusKeyEnumForCurator, StatusKeyEnumForArtist]]] = {
     RoleEnum.curator: {
         "Confirm / Reject": StatusKeyEnumForCurator.confirm,
         "Confirmed, awaiting payment": StatusKeyEnumForCurator.confirmed_payment_curator,
@@ -20,13 +20,13 @@ status_mapping: Dict[RoleEnum, Dict[str, Union[StatusKeyEnumForCurator, StatusKe
         "Placed - x days left until completion": StatusKeyEnumForCurator.payment_curator,
         "Completed, can be extended": StatusKeyEnumForCurator.completed_curator
     },
-    RoleEnum.musician: {
-        "Submit Application": StatusKeyEnumForMusician.submit,
-        "Awaiting review": StatusKeyEnumForMusician.awaiting,
-        "Confirmed, awaiting payment": StatusKeyEnumForMusician.confirmed_payment,
-        "Confirmed, awaiting placement": StatusKeyEnumForMusician.confirmed_placement,
-        "Placed - x days left until completion": StatusKeyEnumForMusician.payment,
-        "Completed, can be extended": StatusKeyEnumForMusician.completed
+    RoleEnum.artist: {
+        "Submit Application": StatusKeyEnumForArtist.submit,
+        "Awaiting review": StatusKeyEnumForArtist.awaiting,
+        "Confirmed, awaiting payment": StatusKeyEnumForArtist.confirmed_payment,
+        "Confirmed, awaiting placement": StatusKeyEnumForArtist.confirmed_placement,
+        "Placed - x days left until completion": StatusKeyEnumForArtist.payment,
+        "Completed, can be extended": StatusKeyEnumForArtist.completed
     }
 }
 
@@ -35,7 +35,7 @@ async def update_deal_status(
     session: AsyncSession,
     deal_id: str,
     role: RoleEnum,
-    new_status: Union[StatusKeyEnumForCurator, StatusKeyEnumForMusician]
+    new_status: Union[StatusKeyEnumForCurator, StatusKeyEnumForArtist]
 ) -> None:
     try:
         deal_uuid = uuid.UUID(deal_id)

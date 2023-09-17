@@ -1,5 +1,5 @@
 from .responses import HealthcheckResponse
 from .deal import CreateDealRequest
-from .musician import CreateMusicianRequest, MusicianEmail
-from .curator import CreateCuratorRequest, CuratorEmail, SocialLink, Playlist
-from .musician_track import CreateMusicianTrackRequest
+from .artist import CreateArtistRequest, ArtistEmail
+from .curator import CreateCuratorRequest, CuratorEmail, SocialLinkSchemas, CuratorPlaylistSchemas
+from .artist_track import CreateArtistTrackRequest

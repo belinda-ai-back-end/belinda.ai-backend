@@ -2,9 +2,15 @@
 import logging
 
 from fastapi.logger import logger
-# from fastapi import Request
+from fastapi import Request
+from jwt import decode
 # from belinda_app.models import Track
 # from belinda_app.db.database import SessionLocal
+from belinda_app.settings import get_settings
+
+settings = get_settings()
+
+SECRET_KEY = settings.SESSION_SECRET_KEY
 
 
 def setup_logger():
@@ -14,12 +20,10 @@ def setup_logger():
     logger.handlers = gunicorn_error_logger.handlers
 
 
-# def get_jwt_token(request: Request):
-#     jwt_token = request.headers.get("Authorization", None)
-#     if jwt_token is not None:
-#         return jwt_token.replace("Bearer ", "")
-#     return None
-
+def get_user_id(request: Request):
+    access_token = request.cookies.get("access_token")
+    token_data = decode(jwt=access_token, key=SECRET_KEY, algorithms=["HS256"])
+    return token_data["user_id"]
 
 # Скрипт валидации json
 # async def track():

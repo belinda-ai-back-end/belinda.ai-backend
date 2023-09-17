@@ -16,7 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def create_access_token(user_id: str, expires_delta: datetime.timedelta) -> str:
     to_encode = {
-        "sub": user_id,
+        "user_id": user_id,
         "exp": datetime.datetime.utcnow() + expires_delta
     }
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
