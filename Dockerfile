@@ -7,6 +7,8 @@ WORKDIR /app
 # Copy the project files to the working directory
 COPY . /app
 
+RUN apt-get update && apt-get install -y gcc python3-dev
+
 # Install Poetry
 RUN pip3 install --no-cache-dir poetry
 
