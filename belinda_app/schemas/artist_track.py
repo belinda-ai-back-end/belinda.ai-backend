@@ -4,6 +4,7 @@ from typing import Optional, List
 
 class CreateArtistTrackRequest(BaseModel):
     trackName: Optional[str]
+    albumName: Optional[str]
     genre: Optional[List[str]]
     trackLyricLanguage: Optional[str]
     songLyrics: Optional[str]

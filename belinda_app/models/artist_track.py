@@ -14,6 +14,7 @@ class ArtistTrack(SQLModel, table=True):
 
     track_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     trackName: str | None
+    albumName: str | None
     genre: List[str] | None = Field(default=None, sa_column=Column(JSON))
     trackLyricLanguage: str | None
     songLyrics: str | None

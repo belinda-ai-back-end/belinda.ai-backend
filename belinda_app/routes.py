@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select, exists
 from sqlalchemy.exc import IntegrityError
 
+import pandas as pd
+
 from belinda_app.settings import get_settings
 from belinda_app.services import (update_deal_status, RoleEnum, create_access_token, check_cookie,
                                   ArtistAuthorizationService, CuratorAuthorizationService, ArtistTrackService)
@@ -20,6 +22,8 @@ from belinda_app.schemas import (HealthcheckResponse, CreateDealRequest, CreateA
                                  CreateCuratorRequest, CuratorEmail, CreateArtistTrackRequest, CuratorPlaylistSchemas)
 from belinda_app.db.database import SessionLocal, check_database_health, get_session
 from belinda_app.utils import get_user_id
+from belinda_app.catboost_predict import pipeline_preprocess, evaluate
+
 settings = get_settings()
 
 router = APIRouter()
@@ -40,16 +44,48 @@ async def healthcheck(request: Request):
     }
 
 
-# Получение 100 рандомных плейлистов
-@router.get("/playlists", dependencies=[Depends(check_cookie)])
-async def get_playlists():
+# Получение 100 плейлистов прогнозируемых моделью
+@router.get("/playlists")
+async def get_playlists(artist_id: UUID = Depends(get_user_id)):
     async with SessionLocal() as session:
         query = await session.execute(
-            select(Playlist).order_by(func.random()).limit(100)
+            select(Playlist.description,
+                   Playlist.name,
+                   Playlist.ownerDisplayName)
         )
-        random_playlists = query.scalars().all()
+        data = pd.DataFrame(query.fetchall(),
+                            columns=["description",
+                                     "playlist_name",
+                                     "owner_name"])
 
-    return random_playlists
+        query = await session.execute(select(Artist.artistName).
+                                      where(Artist.artist_id == artist_id))
+        author_name = query.fetchall()[0]
+        author_name = author_name["artistName"]
+
+        query = await session.execute(select(ArtistTrack.albumName).
+                                      where(ArtistTrack.artist_id == artist_id))
+        album_name = query.fetchall()[0]
+        album_name = album_name["albumName"]
+
+        query = await session.execute(select(ArtistTrack.trackName).
+                                      where(ArtistTrack.artist_id == artist_id))
+        track_name = query.fetchall()[0]
+        track_name = track_name["trackName"]
+
+        data = pipeline_preprocess.pipeline_preprocess(data,
+                                                       author_name=author_name,
+                                                       album_name=album_name,
+                                                       track_name=track_name)
+        data = evaluate.evaluate(data)
+        data["name"] = (await session.execute(select(Playlist.name))).fetchall()
+        top_playlist_lst_prom = evaluate.pred_playlist(data, 100)
+
+        top_playlist_lst = []
+        for i in top_playlist_lst_prom:
+            top_playlist_lst.append(i["name"])
+
+    return top_playlist_lst
 
 
 # Выдача всех треков для artist
